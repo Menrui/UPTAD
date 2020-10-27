@@ -1,0 +1,6 @@
+# @package _group_
+debug: False
+use_tb: True
+num_epochs: 200
+checkpoint_epochs: 50
+snapshot: 50

@@ -1,0 +1,15 @@
+# @package _group_
+name: unetL4v4
+# --- model config ---
+nch: 128
+init_type: normal
+loss_type: L1
+multi: False
+
+# --- optimizer configs ---
+optimizer: adam
+lr: 0.001
+alpha: 0.9
+beta_1: 0.5
+beta_2: 0.999
+lr_policy: None

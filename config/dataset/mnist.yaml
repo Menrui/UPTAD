@@ -1,0 +1,12 @@
+# @package _group_
+name: mnist
+digit: 0
+data_dir: datasets/
+data_info:
+img_w: 32
+img_h: 32
+img_nch: 1
+num_workers: 0
+pin_memory: False
+random_split: True
+batch_size: 128

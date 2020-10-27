@@ -1,0 +1,26 @@
+# @package _group_
+name: yamaha
+category: flat
+data_dir: datasets/
+data_info:
+img_w: 4608
+img_h: 1024
+img_nch: 3
+patch_size: 256
+num_workers: 4
+pin_memory: True
+batch_size: 4
+digit: 0
+
+mask:
+  is_loss_mask: True
+  is_blindspot: False
+  mask_mode: chole
+  mask_fill: 
+  mask_overcoat: True
+  mask_shape: rectangle
+  mask_w: 3
+  mask_h: 3
+  add_gauss: False
+  mask_ratio: 0.85
+  is_test_mask: False

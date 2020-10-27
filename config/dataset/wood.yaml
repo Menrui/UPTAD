@@ -1,0 +1,27 @@
+# @package _group_
+name: mvtec
+category: wood256
+data_dir: datasets/
+data_info: 
+img_w: 256
+img_h: 256
+img_nch: 3
+patch_size: 256
+num_workers: 4
+pin_memory: False
+random_split: True
+batch_size: 64
+digit: 0
+
+mask:
+  is_loss_mask: True
+  is_blindspot: False
+  mask_mode: chole
+  mask_fill: 
+  mask_overcoat: True
+  mask_shape: rectangle
+  mask_w: 3
+  mask_h: 3
+  add_gauss: False
+  mask_ratio: 0.95
+  is_test_mask: False

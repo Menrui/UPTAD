@@ -1,0 +1,31 @@
+seed: 999
+device: cuda
+is_tqdm: True
+work_dir:
+workname:
+
+defaults:
+  # - hydra/launcher: joblib
+  - mode: debug
+  - model: unet
+  - dataset: wood
+#  - log: ${defaults.1.model}_${defaults.2.dataset}
+#    optional: true
+
+log:
+  output_dir:
+  summary_path: 
+  training_output_dir: train
+  trained_model_dir: checkpoints
+  vis_dir: visualize
+  test_output_dir: test
+
+hydra:
+  output_subdir: config
+  run:
+    dir: output/${dataset.name}-${model.name}-${model.loss_type}Loss-nch${model.nch}-epoch${mode.num_epochs}-patch${dataset.patch_size}-${dataset.mask.mask_mode}_${dataset.mask.mask_fill}_w${dataset.mask.mask_w}h${dataset.mask.mask_h}_ratio${dataset.mask.mask_ratio}-${now:%Y%m%d%H%M}
+  sweep:
+    dir: output/
+    subdir: ${dataset.name}-${model.name}-${model.loss_type}Loss-nch${model.nch}-epoch${mode.num_epochs}-patch${dataset.patch_size}-${dataset.mask.mask_mode}_${dataset.mask.mask_fill}_w${dataset.mask.mask_w}h${dataset.mask.mask_h}_ratio${dataset.mask.mask_ratio}-${now:%Y%m%d%H%M}
+
+
