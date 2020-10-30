@@ -43,7 +43,7 @@ def get_loader(config, is_train=True):
             batch_size=batch_size,
             num_workers=config.dataset.num_workers,
             pin_memory=config.dataset.pin_memory,
-            shuffle=is_train,
+            shuffle=False,
             drop_last=False,
         )
         return train_loader, val_loader

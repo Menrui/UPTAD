@@ -147,7 +147,7 @@ class RandomCrop(object):
         new_h, new_w = self.output_size
         # print(h, w, new_h, new_w)
 
-        if not h == new_h and w == new_w:
+        if not h == new_h and not w == new_w:
             top = np.random.randint(0, h - new_h)
             left = np.random.randint(0, w - new_w)
         else:
