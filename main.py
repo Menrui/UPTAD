@@ -11,6 +11,8 @@ from AutoEncoder import AutoEncoder
 from logging import getLogger
 from pytorch_lightning import Trainer
 from src.loader import get_loader
+from src.utils import make_logdirs
+
 
 @hydra.main(config_path='config', config_name='config')
 def main_test(config):
@@ -28,6 +30,11 @@ def main_test(config):
     # =====
     config.work_dir = hydra.utils.get_original_cwd()
     config.workname = os.path.basename(os.getcwd())
+    # }}}
+
+    # Make dirnames. {{{
+    # =====
+    config = make_logdirs(config, output_dir=os.getcwd())
     # }}}
 
     # Get logger. {{{
@@ -49,6 +56,7 @@ def main_test(config):
         gpus=[0]
     )
     trainer.fit(model, train_dataloader=train_loader, val_dataloaders=val_loader)
+
 
 if __name__ == '__main__':
     main_test()

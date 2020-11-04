@@ -13,37 +13,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numba
 
-@numba.njit
-def calc_mask(loop, num_sample, size_data, width, height, mask_mode, mask_fill):
-    mask = np.ones(size_data, np.float32)
-    fill = np.zeros(size_data, np.float32)
-    for ch in range(loop):
-        idy_mask = np.random.randint(0, size_data[0], num_sample)
-        idx_mask = np.random.randint(0, size_data[1], num_sample)
-        # if not overcoat:
-        #     pass
-        for i in range(num_sample):
-            # w = int(np.random.randint(width[0], width[1])) if type(width)==tuple else width
-            # h = int(np.random.randint(height[0], height[1])) if type(height)==tuple else height
-            w = width
-            h = height
-            if (idx_mask[i] + w) > size_data[0] or (idy_mask[i] + h) > size_data[1]:
-                continue
-            if mask_mode=='chole':
-                mask[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, ch] = 0
-                # fill[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, ch] = np.mean(original[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, ch])
-            else:
-                mask[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, :] = 0
-                if mask_fill == 'lmean':
-                    fill[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, 0] = np.mean(original[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, 0])
-                    fill[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, 1] = np.mean(original[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, 1])
-                    fill[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, 2] = np.mean(original[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, 2])
-                elif mask_fill == 'chmean':
-                    fill[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, :] = np.mean(original[idy_mask[i]:idy_mask[i]+h, idx_mask[i]:idx_mask[i]+w, :])
-                else:
-                    pass
-    return mask, fill
-
 
 class MVTecAD(torch.utils.data.Dataset):
 

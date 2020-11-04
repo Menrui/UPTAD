@@ -6,6 +6,8 @@ data_info:
 img_w: 32
 img_h: 32
 img_nch: 1
+patch_w: 32
+patch_h: 32
 num_workers: 0
 pin_memory: False
 random_split: True

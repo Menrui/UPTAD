@@ -212,7 +212,8 @@ class UnifromSample(object):
         # mask = np.concatenate([np.hsplit(h_img, h // stride_h) for h_img in np.vsplit(mask, w // stride_w)], axis=0)
         # gt = np.concatenate([np.hsplit(h_img, h // stride_h) for h_img in np.vsplit(gt, w // stride_w)], axis=0)
 
-        original = np.concatenate([np.hsplit(h_img, w // stride_w) for h_img in np.vsplit(original, h // stride_h)], axis=0)
+        original = np.concatenate([np.hsplit(h_img, w // stride_w) for h_img in np.vsplit(original, h // stride_h)],
+                                  axis=0)
         input = np.concatenate([np.hsplit(h_img, w // stride_w) for h_img in np.vsplit(input, h // stride_h)], axis=0)
         label = np.concatenate([np.hsplit(h_img, w // stride_w) for h_img in np.vsplit(label, h // stride_h)], axis=0)
         mask = np.concatenate([np.hsplit(h_img, w // stride_w) for h_img in np.vsplit(mask, h // stride_h)], axis=0)
@@ -223,7 +224,6 @@ class UnifromSample(object):
         # label = np.concatenate([np.array_split(h_img, w // stride_w, 1) for h_img in np.array_split(label, h // stride_h, 0)], axis=0)
         # mask = np.concatenate([np.array_split(h_img, w // stride_w, 1) for h_img in np.array_split(mask, h // stride_h, 0)], axis=0)
         # gt = np.concatenate([np.array_split(h_img, w // stride_w, 1) for h_img in np.array_split(gt, h // stride_h, 0)], axis=0)
-
 
         return original, input, label, mask, gt
 
