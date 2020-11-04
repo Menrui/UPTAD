@@ -18,9 +18,10 @@ from src.utils import add_colorbar, History
 
 logger = getLogger('root')
 
+
 class AutoEncoder(LightningModule):
     def __init__(self, config):
-        super().__init__()
+        super(self, AutoEncoder).__init__()
         # hyper parameters
         self.learning_rate = config.model.lr
         self.beta_1 = config.model.beta_1
@@ -34,10 +35,10 @@ class AutoEncoder(LightningModule):
 
         # test parameter
         self.digit = config.dataset.digit
-    
+
     def forward(self, x):
         return self.model(x)
-    
+
     def training_step(self, batch, batch_idx):
         scaler = torch.cuda.amp.GradScaler()
 
@@ -46,17 +47,17 @@ class AutoEncoder(LightningModule):
 
         # calculate Loss
         loss_G = self.critation(output * (1 - mask), original * (1 - mask))
-        
+
         self.log('train_loss', loss_G, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss_G
-    
+
     def validation_step(self, batch, batch_idx):
         original, input, label, mask, _, _ = batch
         output = self.model(input.float())
 
         # calculate Loss
         loss_G = self.critation(output * (1 - mask), original * (1 - mask))
-        
+
         self.log('val_loss', loss_G, on_step=True, on_epoch=True, prog_bar=True, logger=True)
 
     def test_step(self, batch, batch_idx):
@@ -68,13 +69,13 @@ class AutoEncoder(LightningModule):
             input = input.reshape(-1, _size[2], _size[3], _size[4])
             mask = mask.reshape(-1, _size[2], _size[3], _size[4])
             gt = gt.reshape(-1, 1, _size[3], _size[4])  # ground truth mask is grayscale
-        
+
         output = self.model(original)
 
-        anomaly_score = compute_anomaly_score(original, output)
-        self.log_dict({'anomaly_score':anomaly_score, 'anomaly_label': target, 'id': batch_idx})
+        anomaly_score = self.compute_anomaly_score(original, output)
+        self.log_dict({'anomaly_score': anomaly_score, 'anomaly_label': target, 'id': batch_idx})
         return anomaly_score, target
-    
+
     def test_epoch_end(self, outputs):
         # Compute roc curve and auc score. {{{
         # =====
@@ -87,7 +88,7 @@ class AutoEncoder(LightningModule):
 
         df = pd.DataFrame({'fpr': fpr,
                            'tpr': tpr,
-                           'th' : th  })
+                           'th': th})
         df.to_csv(os.path.join(os.getcwd(), 'training.roc.csv'), index=None)
         logger.info('fpr@tpr=1.0: {}  AUC: {}'.format(fpr[-2], auc))
         # }}}
@@ -101,7 +102,7 @@ class AutoEncoder(LightningModule):
         normal_scores = anomaly_scores[anomaly_labels == 0]
         abnormal_scores = anomaly_scores[anomaly_labels == 1]
         ax.hist([normal_scores, abnormal_scores], 50, label=['Normal samples', 'Abnormal samples'],
-            alpha=0.5, histtype='stepfilled')
+                alpha=0.5, histtype='stepfilled')
         ax.legend()
         ax.grid(which='major', axis='y', color='grey',
                 alpha=0.8, linestyle="--", linewidth=1)
@@ -125,9 +126,9 @@ class AutoEncoder(LightningModule):
         # Save anomaly scores. {{{
         # =====
         df = pd.DataFrame({'anomaly_score': anomaly_scores,
-                        'anomaly_label': anomaly_labels,
-                        'labels': targets})
-        df.to_csv(os.path.join(config.log.test_output_dir, 'training.anomaly_score.csv'), index=None)
+                           'anomaly_label': anomaly_labels,
+                           'labels': targets})
+        # df.to_csv(os.path.join(config.log.test_output_dir, 'training.anomaly_score.csv'), index=None)
         # }}}
 
     def configure_optimizers(self):
@@ -137,8 +138,8 @@ class AutoEncoder(LightningModule):
             betas=(self.beta_1, self.beta_2)
         )
         return optimiser
-    
-    def compute_anomaly_score(img, output):
+
+    def compute_anomaly_score(self, img, output):
         # Compute L1 loss
         res_loss = torch.abs(img - output)
         # res_loss = res_loss.view(res_loss.size()[0], -1)
@@ -149,8 +150,8 @@ class AutoEncoder(LightningModule):
         res_loss = torch.from_numpy(res_loss)
 
         return res_loss
-    
-    def vis_recon_image(original, input, output, mask, score, index):
+
+    def vis_recon_image(self, original, input, output, mask, score, index):
         original_img = original.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
         # input_img = input.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
         output_img = output.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
@@ -176,5 +177,5 @@ class AutoEncoder(LightningModule):
         ax[0][2].set_yticklabels([])
         ax[0][2].set_title('Difference image')
         add_colorbar(im2)
-        
+
         fig.subplots('AnomalyScore: {:.3f}'.format(score))
