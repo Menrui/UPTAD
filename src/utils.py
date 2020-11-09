@@ -170,13 +170,13 @@ def add_colorbar(im, aspect=20, pad_fraction=0.5, **kwargs):
     return im.axes.figure.colorbar(im, cax=cax, **kwargs)
 
 
-def make_patches(x_tensor, config):
-    x_tensor = x_tensor.unfold(2, config.dataset.patch_size, config.dataset.patch_step).unfold(3,
-                                                                                               config.dataset.patch_size,
-                                                                                               config.dataset.patch_step)
-    row, col = x_tensor.size(3), x_tensor.size(2)
-    x_tensor = x_tensor.permute([0, 2, 3, 1, 4, 5]).reshape(-1, 3, config.dataset.patch_size, config.dataset.patch_size)
-    return x_tensor, row, col
+# def make_patches(x_tensor, config):
+#     x_tensor = x_tensor.unfold(2, config.dataset.patch_size, config.dataset.patch_step).unfold(3,
+#                                                                                                config.dataset.patch_size,
+#                                                                                                config.dataset.patch_step)
+#     row, col = x_tensor.size(3), x_tensor.size(2)
+#     x_tensor = x_tensor.permute([0, 2, 3, 1, 4, 5]).reshape(-1, 3, config.dataset.patch_size, config.dataset.patch_size)
+#     return x_tensor, row, col
 
 
 def labeling_patchs(ground_truth_patches_tensor):

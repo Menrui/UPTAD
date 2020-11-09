@@ -30,15 +30,15 @@ class MVTecADDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         if stage == 'fit' or stage is None:
-            trainsform = torchvision.transforms.Compose([
+            transform = torchvision.transforms.Compose([
                 transforms.Resize((self.data_config.img_h, self.data_config.img_w)),
                 transforms.RandomCrop((self.data_config.patch_h, self.data_config.patch_w)),
                 transforms.RandomFlip(),
                 transforms.ToTensor(),
-                transforms.Normalize(0.5, 0.5)
+                transforms.Normalize([0.5], [0.5])
             ])
             dataset = MVTecAD(
-                root=self.data_dir, category=self.category, train=True, trainsform=trainsform,
+                root=self.data_dir, category=self.category, train=True, transform=transform,
                 size_data=(self.data_config.img_h, self.data_config.img_w, self.data_config.img_nch),
                 maskconf=self.mask_config
             )
@@ -49,14 +49,14 @@ class MVTecADDataModule(LightningDataModule):
             logger.info('train image shape: {}'.format(self.train_dataset[0][0].shape))
 
         if stage == 'test' or stage is None:
-            trainsform = torchvision.transforms.Compose([
+            transform = torchvision.transforms.Compose([
                 transforms.Resize((self.data_config.img_h, self.data_config.img_w)),
                 transforms.UnifromSample((self.data_config.patch_h, self.data_config.patch_w)),
                 transforms.ToTensor(),
-                transforms.Normalize(0.5, 0.5)
+                transforms.Normalize([0.5], [0.5])
             ])
             self.test_dataset = MVTecAD(
-                root=self.data_dir, category=self.category, train=True, trainsform=trainsform,
+                root=self.data_dir, category=self.category, train=False, transform=transform,
                 size_data=(self.data_config.img_h, self.data_config.img_w, self.data_config.img_nch),
                 maskconf=self.mask_config
             )
@@ -87,7 +87,7 @@ class MVTecADDataModule(LightningDataModule):
 
     def test_dataloader(self, *args, **kwargs) -> Union[DataLoader, List[DataLoader]]:
         return torch.utils.data.DataLoader(
-            self.train_dataset,
+            self.test_dataset,
             batch_size=self.data_config.test_batch_size,
             num_workers=self.data_config.num_workers,
             pin_memory=self.data_config.pin_memory,

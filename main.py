@@ -7,10 +7,16 @@ import torch
 
 import pytorch_lightning as pl
 
-from AutoEncoder import AutoEncoder
+from lit_SimpleRecon import SimpleReconstructionModule
+from lit_MaskRecon import MaskReconstructionModule 
+
 from logging import getLogger
 from pytorch_lightning import Trainer
-from src.loader import get_loader
+from pytorch_lightning.callbacks import ModelCheckpoint
+
+from src.datasets.MVTecAD_litmodule import MVTecADDataModule
+from src.modules import find_module_using_name
+from src.callbacks.history import HistoryCallback
 from src.utils import make_logdirs
 
 
@@ -47,15 +53,32 @@ def main_test(config):
     # Configure train_data loader. {{{
     # =====
     logger.info('Configure training data loader...')
-    train_loader, val_loader = get_loader(config, is_train=True)
+    # train_loader, val_loader = get_loader(config, is_train=True)
+    data_module = MVTecADDataModule(config)
     # }}}
-    print('t')
 
-    model = AutoEncoder(config)
+    model = find_module_using_name('src.modules.{}'.format(config.model.name), config)
+    lit_module = MaskReconstructionModule(config, model)
     trainer = Trainer(
-        gpus=[0]
+        gpus=[0],
+        # fast_dev_run=True,
+        weights_summary='full',
+        max_epochs=config.mode.num_epochs,
+        # amp_backend='native',
+        profiler='simple',
+        # progress_bar_refresh_rate=0,
+        # log_gpu_memory=True,
+        # check_val_every_n_epoch=10,
+        callbacks=[HistoryCallback(os.getcwd()),
+                   ModelCheckpoint(
+                        dirpath=str(os.path.join(config.log.training_output_dir, 'checkpoints')),
+                        verbose=True,
+                        filename='training-{epoch:02d}',
+                        period=config.mode.checkpoint_epochs)
+                ]
     )
-    trainer.fit(model, train_dataloader=train_loader, val_dataloaders=val_loader)
+    trainer.fit(lit_module, data_module)
+    trainer.test()
 
 
 if __name__ == '__main__':

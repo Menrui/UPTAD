@@ -16,14 +16,14 @@ lr_policy: None
 
 # --- masking configs ---
 mask:
-  is_loss_mask: True
+  is_loss_mask: False
   is_blindspot: False
   is_test_mask: False
   mask_mode: chole
   mask_fill:
   mask_overcoat: True
   mask_shape: rectangle
-  mask_w: 3
-  mask_h: 3
+  mask_w: 0
+  mask_h: 0
   add_gauss: False
   mask_ratio: 0.95

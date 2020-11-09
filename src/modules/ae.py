@@ -21,7 +21,8 @@ class AutoEncoder(nn.Module):
         super(AutoEncoder, self).__init__()
         logger.info('Build AutoEncoder... ({})'.format(os.path.basename(__file__)))
 
-        in_c, out_h, out_w = config.dataset.data_info
+        # in_c, out_h, out_w = config.dataset.data_info
+        in_c = config.dataset.img_nch
         dim = config.model.nch // 16
 
         self.enc11 = EncodeBlock(1 * in_c, 1 * dim, use_bn=True)

@@ -144,34 +144,37 @@ class MVTecAD(torch.utils.data.Dataset):
         mask = np.ones(size_data, np.float32)
         fill = np.zeros(size_data, np.float32)
         for ch in range(loop):
-            idy_mask = np.random.randint(0, size_data[0], num_sample)
-            idx_mask = np.random.randint(0, size_data[1], num_sample)
+            idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
+            idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
 
-            # idx_mask = [idx_mask, idx_mask+1, idx_mask, idx_mask+1]
-            # idy_mask = [idy_mask, idx_mask, idy_mask+1, idy_mask+1]
+            idx_mask = [idx_mask + i%width for i in range(height*width)]
+            idy_mask = [idy_mask + i//width for i in range(height*width)]
 
-            if not overcoat:
-                pass
-            for idy,idx in zip(idy_mask, idx_mask):
-                # w = int(np.random.randint(width[0], width[1])) if type(width)==tuple else width
-                # h = int(np.random.randint(height[0], height[1])) if type(height)==tuple else height
-                w = width
-                h = height
-                if (idx + w) > size_data[0] or (idy + h) > size_data[1]:
-                    continue
-                if self.mask_mode=='chole':
-                    mask[idy:idy+h, idx:idx+w, ch] = 0
-                    # fill[idy:idy+h, idx:idx+w, ch] = np.mean(original[idy:idy+h, idx:idx+w, ch])
-                else:
-                    mask[idy:idy+h, idx:idx+w, :] = 0
-                    # if self.mask_fill == 'lmean':
-                    #     fill[idy:idy+h, idx:idx+w, 0] = np.mean(original[idy:idy+h, idx:idx+w, 0])
-                    #     fill[idy:idy+h, idx:idx+w, 1] = np.mean(original[idy:idy+h, idx:idx+w, 1])
-                    #     fill[idy:idy+h, idx:idx+w, 2] = np.mean(original[idy:idy+h, idx:idx+w, 2])
-                    # elif self.mask_fill == 'chmean':
-                    #     fill[idy:idy+h, idx:idx+w, :] = np.mean(original[idy:idy+h, idx:idx+w, :])
-                    # else:
-                    #     pass
+            if self.mask_mode == 'chole':
+                mask[idy_mask, idx_mask, ch] = 0
+            else:
+                mask[idy_mask, idx_mask, :] = 0
+
+            # if not overcoat:
+            #     pass
+            # for idy,idx in zip(idy_mask, idx_mask):
+            #     # w = int(np.random.randint(width[0], width[1])) if type(width)==tuple else width
+            #     # h = int(np.random.randint(height[0], height[1])) if type(height)==tuple else height
+            #     w = width
+            #     h = height
+            #     if self.mask_mode=='chole':
+            #         mask[idy:idy+h, idx:idx+w, ch] = 0
+            #         # fill[idy:idy+h, idx:idx+w, ch] = np.mean(original[idy:idy+h, idx:idx+w, ch])
+            #     else:
+            #         mask[idy:idy+h, idx:idx+w, :] = 0
+            #         # if self.mask_fill == 'lmean':
+            #         #     fill[idy:idy+h, idx:idx+w, 0] = np.mean(original[idy:idy+h, idx:idx+w, 0])
+            #         #     fill[idy:idy+h, idx:idx+w, 1] = np.mean(original[idy:idy+h, idx:idx+w, 1])
+            #         #     fill[idy:idy+h, idx:idx+w, 2] = np.mean(original[idy:idy+h, idx:idx+w, 2])
+            #         # elif self.mask_fill == 'chmean':
+            #         #     fill[idy:idy+h, idx:idx+w, :] = np.mean(original[idy:idy+h, idx:idx+w, :])
+            #         # else:
+            #         #     pass
 
         # mask, fill = calc_mask(loop=loop, num_sample=num_sample, size_data=size_data, width=width, height=height, 
         #                             mask_mode=self.mask_mode, mask_fill=self.mask_fill)
@@ -179,8 +182,8 @@ class MVTecAD(torch.utils.data.Dataset):
             input = input + self.noise[index]*(1-mask)
         else:
             input = input*mask
-            if self.mask_fill is not None and 'mean' in self.mask_fill:
-                input = input + fill
+            # if self.mask_fill is not None and 'mean' in self.mask_fill:
+            #     input = input + fill
         return input, mask
 
     def n2v_generate_mask(self, input):

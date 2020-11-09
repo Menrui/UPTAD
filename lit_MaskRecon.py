@@ -7,21 +7,22 @@ import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
+import torchvision
 
 from pytorch_lightning.core.lightning import LightningModule
 
 from logging import getLogger
 from sklearn.metrics import roc_curve, roc_auc_score, auc
-from src.modules.ae import AutoEncoder as AE
+from src.modules.unet import UNet as unet
 from src.losses import get_loss
 from src.utils import add_colorbar, History
 
 logger = getLogger('root')
 
 
-class AutoEncoder(LightningModule):
-    def __init__(self, config, *args, **kwargs):
-        super(self, AutoEncoder).__init__()
+class MaskReconstructionModule(LightningModule):
+    def __init__(self, config, model, *args, **kwargs):
+        super().__init__()
 
         # hyper parameters
         self.learning_rate = config.model.lr
@@ -29,7 +30,7 @@ class AutoEncoder(LightningModule):
         self.beta_2 = config.model.beta_2
 
         # network define
-        self.model = AE(config)
+        self.model = model
 
         # error function define
         self.critation = get_loss(config)
@@ -38,8 +39,8 @@ class AutoEncoder(LightningModule):
         self.digit = config.dataset.digit
 
         # output dir path
-        self.train_output_dir = config.log.train_output_dir
-        self.vis_output_dir = config.log.vis_output_dir
+        self.train_output_dir = config.log.training_output_dir
+        self.vis_output_dir = config.log.vis_dir
         self.test_output_dir = config.log.test_output_dir
 
     def forward(self, x):
@@ -52,8 +53,7 @@ class AutoEncoder(LightningModule):
         # calculate Loss
         loss_G = self.critation(output * (1 - mask), original * (1 - mask))
 
-        self.log('train_loss', loss_G, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.train_history({'train_loss': loss_G.item()})
+        self.log('train_loss', loss_G, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         return loss_G
 
     def validation_step(self, batch, batch_idx):
@@ -63,7 +63,12 @@ class AutoEncoder(LightningModule):
         # calculate Loss
         loss_G = self.critation(output * (1 - mask), original * (1 - mask))
 
-        self.log('val_loss', loss_G, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log('val_loss', loss_G, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        if batch_idx == 0:
+            if self.current_epoch == 0:
+                torchvision.utils.save_image(original, os.path.join(self.vis_output_dir, 'validation___.png'), nrow=5, normalize=True)
+                torchvision.utils.save_image(input, os.path.join(self.vis_output_dir, 'validation__.png'), nrow=5, normalize=True)
+            torchvision.utils.save_image(output, os.path.join(self.vis_output_dir, 'validation_{}.png'.format(self.current_epoch)), nrow=5, normalize=True)
         return loss_G
 
     def test_step(self, batch, batch_idx):
@@ -80,19 +85,21 @@ class AutoEncoder(LightningModule):
 
         anomaly_score = self._compute_anomaly_score(original, output)
 
-        self.log_dict({'anomaly_score': anomaly_score, 'anomaly_label': target, 'id': batch_idx})
+        self._vis_recon_image(original[0], input[0], output[0], mask[0], anomaly_score, batch_idx)
+        # self.log_dict({'anomaly_score': anomaly_score, 'anomaly_label': target, 'id': batch_idx})
         return anomaly_score, target
 
     def test_epoch_end(self, outputs):
         """
-        :param outputs: anomaly_score, target
+        :param outputs: [(anomaly_score, target), ...]
         :return:
         """
         # Compute roc curve and auc score. {{{
         # =====
-        targets = torch.cat([target for target in outputs[0]]).numpy()
-        anomaly_scores = torch.cat([score for score in outputs[1]]).numpy()
+        targets = torch.cat([output[1] for output in outputs]).cpu().numpy()
+        anomaly_scores = torch.cat([output[0] for output in outputs]).numpy()
         anomaly_labels = np.uint8(targets != self.digit)
+        # print(anomaly_labels, anomaly_labels.shape)
 
         fpr, tpr, th = roc_curve(anomaly_labels, anomaly_scores)
         auc = roc_auc_score(anomaly_labels, anomaly_scores)
@@ -100,7 +107,7 @@ class AutoEncoder(LightningModule):
         df = pd.DataFrame({'fpr': fpr,
                            'tpr': tpr,
                            'th': th})
-        df.to_csv(os.path.join(os.getcwd(), 'training.roc.csv'), index=None)
+        df.to_csv(os.path.join(self.test_output_dir, 'training.roc.csv'), index=None)
         logger.info('fpr@tpr=1.0: {}  AUC: {}'.format(fpr[-2], auc))
         # }}}
 
@@ -117,7 +124,7 @@ class AutoEncoder(LightningModule):
         ax.legend()
         ax.grid(which='major', axis='y', color='grey',
                 alpha=0.8, linestyle="--", linewidth=1)
-        plt.savefig(os.path.join(os.getcwd(), 'training-hist.png'), transparent=True)
+        plt.savefig(os.path.join(self.test_output_dir, 'training-hist.png'), transparent=True)
         plt.clf()
         # }}}
 
@@ -130,7 +137,7 @@ class AutoEncoder(LightningModule):
         ax.set_title('ROC Curve (area = {:.4f})'.format(auc))
         ax.grid()
         ax.plot(fpr, tpr)  # , marker='o')
-        plt.savefig(os.path.join(os.getcwd(), 'training-roc.png'), transparent=True)
+        plt.savefig(os.path.join(self.test_output_dir, 'training-roc.png'), transparent=True)
         plt.clf()
         # }}}
 
@@ -156,8 +163,8 @@ class AutoEncoder(LightningModule):
         # res_loss = res_loss.view(res_loss.size()[0], -1)
         res_loss = res_loss.view(res_loss.size()[0], -1).detach().cpu().numpy()
         # res_loss = torch.mean(res_loss, 1)
-        res_loss = np.mean(res_loss, 1)
-        # res_loss = np.max(res_loss, 1)
+        # res_loss = np.mean(res_loss, 1)
+        res_loss = np.max(res_loss, 1)
         res_loss = torch.from_numpy(res_loss)
 
         return res_loss
@@ -169,7 +176,7 @@ class AutoEncoder(LightningModule):
         # mask_img = mask.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
         dif_img = np.abs(original_img - output_img) if original_img.ndim == 3 else \
             np.expand_dims(np.abs(original_img - output_img), axis=2)
-        score = score.detach().cpu().numpy()
+        score = score.detach().cpu().numpy()[0]
 
         fig, ax = plt.subplots(1, 3, squeeze=False)
         ax[0][0].imshow(original_img)
@@ -189,8 +196,9 @@ class AutoEncoder(LightningModule):
         ax[0][2].set_title('Difference image')
         add_colorbar(im2)
 
-        fig.subplots('AnomalyScore: {:.3f}'.format(score))
+        fig.suptitle('AnomalyScore: {:.3f}'.format(score))
         plt.savefig(os.path.join(self.test_output_dir, 'training-{}.png'.format(index)),
                     transparent=True)
         plt.clf()
         plt.close()
+    

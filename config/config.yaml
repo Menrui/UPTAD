@@ -23,9 +23,9 @@ log:
 hydra:
   output_subdir: config
   run:
-    dir: output/${dataset.name}-${model.name}-${model.loss_type}Loss-nch${model.nch}-epoch${mode.num_epochs}-patch${dataset.patch_size}-${dataset.mask.mask_mode}_${dataset.mask.mask_fill}_w${dataset.mask.mask_w}h${dataset.mask.mask_h}_ratio${dataset.mask.mask_ratio}-${now:%Y%m%d%H%M}
+    dir: output/${dataset.name}-${model.name}-${model.loss_type}Loss-nch${model.nch}-epoch${mode.num_epochs}-patch${dataset.patch_w}_${dataset.patch_h}-${model.mask.mask_mode}_${model.mask.mask_fill}_w${model.mask.mask_w}h${model.mask.mask_h}_ratio${model.mask.mask_ratio}-${now:%Y%m%d%H%M}
   sweep:
     dir: output/
-    subdir: ${dataset.name}-${model.name}-${model.loss_type}Loss-nch${model.nch}-epoch${mode.num_epochs}-patch${dataset.patch_size}-${dataset.mask.mask_mode}_${dataset.mask.mask_fill}_w${dataset.mask.mask_w}h${dataset.mask.mask_h}_ratio${dataset.mask.mask_ratio}-${now:%Y%m%d%H%M}
+    subdir: ${dataset.name}-${model.name}-${model.loss_type}Loss-nch${model.nch}-epoch${mode.num_epochs}-patch${dataset.patch_w}_${dataset.patch_h}-${model.mask.mask_mode}_${model.mask.mask_fill}_w${model.mask.mask_w}h${model.mask.mask_h}_ratio${model.mask.mask_ratio}-${now:%Y%m%d%H%M}
 
 
