@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import pytorch_ssim
+from partialconv.loss import VGG16PartialLoss
 
 def get_loss(config):
     if config.model.loss_type == 'L1':
@@ -17,6 +18,27 @@ def get_loss(config):
         return nn.MSELoss()
     elif config.model.loss_type == 'SSIM':
         return pytorch_ssim.SSIM()
+    elif config.model.loss_type == 'Style' or config.model.loss_type == 'Perceptual' or config.model.loss_type == 'Texture':
+        return VGGLoss(config.model.loss_type)
+
+
+class VGGLoss(nn.Module):
+    def __init__(self, loss_type, l1_alpha=5.0, perceptual_alpha=0.05, style_alpha=120, smooth_alpha=0, feat_num=3):
+        super(VGGLoss, self).__init__()
+        assert loss_type == 'Style' or loss_type == 'Perceptual' or loss_type == 'Texture'
+        self.loss = VGG16PartialLoss(l1_alpha=l1_alpha, perceptual_alpha=perceptual_alpha, style_alpha=style_alpha,
+                                     smooth_alpha=smooth_alpha, feat_num=feat_num)
+        self.loss_type = loss_type
+    
+    def __call__(self, output, label):
+        tot, vgg_loss, style_loss = self.loss(output, label)
+        if self.loss_type == 'Style':
+            return style_loss
+        elif self.loss_type == 'Perceptual':
+            return vgg_loss
+        elif self.loss_type == 'Texture':
+            return tot
+
 
 
 class GANLoss(nn.Module):

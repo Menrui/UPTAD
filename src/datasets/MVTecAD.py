@@ -36,8 +36,7 @@ class MVTecAD(torch.utils.data.Dataset):
 
         self.sgm = sgm
         self.size_data = size_data
-        self.is_loss_mask = maskconf.is_loss_mask
-        self.is_blindspot = maskconf.is_blindspot
+        self.is_loss_mask = maskconf.add_loss_mask
         self.ratio = maskconf.mask_ratio
         self.mask_mode = maskconf.mask_mode
         self.mask_fill = maskconf.mask_fill
@@ -107,16 +106,15 @@ class MVTecAD(torch.utils.data.Dataset):
 
         original = np.expand_dims(original, axis=2) if original.ndim==2 else original
         label = original + self.noise[index]
-        if self.is_loss_mask:
-            # _input = copy.deepcopy(original) if not self.add_gauss else copy.deepcopy(label)
-            _input  = copy.deepcopy(original)
-            # if self.is_blindspot:
-            if self.mask_mode == 'n2v':
-                input, mask = self.n2v_generate_mask(_input)
-            else:
-                input, mask = self.generate_mask(original, _input, index)
+        # _input = copy.deepcopy(original) if not self.add_gauss else copy.deepcopy(label)
+        
+        _input  = copy.deepcopy(original)
+        if self.mask_mode == 'n2v':
+            input, mask = self.n2v_generate_mask(_input)
         else:
-            input, mask = original, np.zeros(self.size_data, np.float32)
+            input, mask = self.generate_mask(original, _input, index)
+        if not self.is_loss_mask:
+            mask = np.zeros(self.size_data, np.float32)
 
         # Image.fromarray((mask*255).astype(np.uint8).squeeze()).save(f"/home/inagaki/workspace/denoising_ad_mask/sample/{index}.png")
         if self.transform:

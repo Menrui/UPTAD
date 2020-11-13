@@ -3,7 +3,7 @@ name: ae
 # --- model config ---
 nch: 128
 init_type: normal
-loss_type: L1
+loss_type: L2
 multi: False
 
 # --- optimizer configs ---
@@ -16,9 +16,9 @@ lr_policy: None
 
 # --- masking configs ---
 mask:
-  is_loss_mask: False
-  is_blindspot: False
-  is_test_mask: False
+  add_loss_mask: False
+  add_mask: False
+  add_test_mask: False
   mask_mode: chole
   mask_fill:
   mask_overcoat: True

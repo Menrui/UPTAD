@@ -2,5 +2,6 @@
 debug: True
 use_tb: False
 num_epochs: 3
-checkpoint_epochs: 3
+checkpoint_epoch: 3
+validation_epoch: 1
 snapshot: 3

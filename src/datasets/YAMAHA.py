@@ -35,8 +35,7 @@ class YAMAHA(torch.utils.data.Dataset):
 
         self.sgm = sgm
         self.size_data = size_data
-        self.is_loss_mask = maskconf.is_loss_mask
-        self.is_blindspot = maskconf.is_blindspot
+        self.is_loss_mask = maskconf.add_loss_mask
         self.ratio = maskconf.mask_ratio
         self.mask_mode = maskconf.mask_mode
         self.mask_size = (maskconf.mask_h, maskconf.mask_w)
@@ -70,7 +69,10 @@ class YAMAHA(torch.utils.data.Dataset):
                 if c == self.normal_class[0]:
                     labels.extend(len(paths) * [0])
                 else:
-                    labels.extend(len(paths) * [1])
+                    for i,abclass in enumerate(self.abnormal_class):
+                        if c == abclass:
+                            labels.extend(len(paths) * [i+1])
+            print(labels)
 
             self.img_paths = img_paths
             self.labels = labels
@@ -91,12 +93,19 @@ class YAMAHA(torch.utils.data.Dataset):
         img_path, target = self.img_paths[index], self.labels[index]
 
         if not self.train:
-            gt_path = self.gt_paths[index]
-            ground_truth = plt.imread(gt_path, 0)
-            ground_truth = ground_truth[:,:,0]+ground_truth[:,:,1]+ground_truth[:,:,2]+ground_truth[:,:,3]
-            if 'good' in self.gt_paths[index]:
-                ground_truth = np.zeros([self.size_data[0], self.size_data[1]])
-            ground_truth = np.expand_dims(ground_truth, axis=2)
+            if self.gt_paths:
+                gt_path = self.gt_paths[index]
+                ground_truth = plt.imread(gt_path, 0)
+                ground_truth = ground_truth[:,:,0]+ground_truth[:,:,1]+ground_truth[:,:,2]+ground_truth[:,:,3]
+                if 'good' in self.gt_paths[index]:
+                    ground_truth = np.zeros([self.size_data[0], self.size_data[1]])
+                ground_truth = np.expand_dims(ground_truth, axis=2)
+            else:
+                if 'good' in self.img_paths[index]:
+                    ground_truth = np.zeros([self.size_data[0], self.size_data[1]])
+                else:
+                    ground_truth = np.ones([self.size_data[0], self.size_data[1]])
+                ground_truth = np.expand_dims(ground_truth, axis=2)
         else:
             ground_truth = np.zeros([self.size_data[0], self.size_data[1], 1])
         
@@ -110,15 +119,16 @@ class YAMAHA(torch.utils.data.Dataset):
         original = np.expand_dims(original, axis=2) if original.ndim==2 else original
         # label = original + self.noise[index]
         label = copy.deepcopy(original)
-        if self.is_loss_mask:
-            # _input = copy.deepcopy(original) if not self.add_gauss else copy.deepcopy(label)
-            _input = copy.deepcopy(original)
-            if self.mask_mode == 'n2v':
-                input, mask = self.n2v_generate_mask(_input)
-            else:
-                input, mask = self.generate_mask(_input, index)
+        # _input = copy.deepcopy(original) if not self.add_gauss else copy.deepcopy(label)
+
+        _input = copy.deepcopy(original)
+
+        if self.mask_mode == 'n2v':
+            input, mask = self.n2v_generate_mask(_input)
         else:
-            input, mask = original, np.zeros(self.size_data, np.float32)
+            input, mask = self.generate_mask(_input, index)
+        if not self.is_loss_mask:
+            mask = np.zeros(self.size_data, np.float32)
 
         # Image.fromarray((mask*255).astype(np.uint8).squeeze()).save(f"/home/inagaki/workspace/denoising_ad_mask/sample/{index}.png")
         if self.transform:
@@ -144,24 +154,33 @@ class YAMAHA(torch.utils.data.Dataset):
         loop = size_data[2] if self.mask_mode=='chole' else 1 if self.mask_mode=='hole' else size_data[2]
         
         for ch in range(loop):
-            idy_mask = np.random.randint(0, size_data[0], num_sample)
-            idx_mask = np.random.randint(0, size_data[1], num_sample)
-            if not overcoat:
-                pass
-            for idy,idx in zip(idy_mask, idx_mask):
-                # w = int(np.random.randint(width[0], width[1])) if type(width)==tuple else width
-                # h = int(np.random.randint(height[0], height[1])) if type(height)==tuple else height
-                w = width
-                h = height
-                if (idx + w) > size_data[1] or (idy + h) > size_data[0]:
-                    continue
-                if self.mask_mode=='chole':
-                    mask[idy:idy+h, idx:idx+w, ch]=0
-                else:
-                    mask[idy:idy+h, idx:idx+w, :]=0
+            idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
+            idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
+            
+            idx_mask = [idx_mask + i%width for i in range(height*width)]
+            idy_mask = [idy_mask + i//width for i in range(height*width)]
+            # print(np.max(idx_mask), np.max(idy_mask), mask.shape)
+
+            if self.mask_mode == 'chole':
+                mask[idy_mask, idx_mask, ch] = 0
+            else:
+                mask[idy_mask, idx_mask, :] = 0
+
+        #     for idy,idx in zip(idy_mask, idx_mask):
+        #         # w = int(np.random.randint(width[0], width[1])) if type(width)==tuple else width
+        #         # h = int(np.random.randint(height[0], height[1])) if type(height)==tuple else height
+        #         w = width
+        #         h = height
+        #         if (idx + w) > size_data[1] or (idy + h) > size_data[0]:
+        #             continue
+        #         if self.mask_mode=='chole':
+        #             mask[idy:idy+h, idx:idx+w, ch]=0
+        #         else:
+        #             mask[idy:idy+h, idx:idx+w, :]=0
         if self.mask_mode=='normal':
             input = input + self.noise[index]*(1-mask)
         else:
+            # print(input.shape, mask.shape)
             input = input*mask
         return input, mask
 

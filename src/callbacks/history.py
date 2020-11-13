@@ -10,14 +10,15 @@ class HistoryCallback(Callback):
         self.train_history = History(keys=('train_loss', '_'), output_dir=output_dir)
     
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
-        # print(outputs)
-        self.train_history({'train_loss': outputs[0][0]['train_loss'].item()})
+        if outputs:
+            self.train_history({'train_loss': outputs[0][0]['train_loss'].item()})
         # print('\n',outputs,'\n')
             # print(loss)
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
         # print('\n',outputs,'\n')
-        self.val_history({'val_loss': outputs.item()})
+        if outputs:
+            self.val_history({'val_loss': outputs.item()})
         # for loss in outputs:
             # self.train_history({'val_loss': loss.item()})
             # pass

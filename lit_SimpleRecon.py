@@ -43,6 +43,10 @@ class SimpleReconstructionModule(LightningModule):
         self.vis_output_dir = config.log.vis_dir
         self.test_output_dir = config.log.test_output_dir
 
+        # test dir path
+        data_dir = os.path.join(config.work_dir, f'{config.dataset.data_dir}', f'{config.dataset.name}', f'{config.dataset.category}', 'test')
+        self.test_anomaly_classes = os.listdir(data_dir)
+
     def forward(self, x):
         return self.model(x)
 
@@ -128,6 +132,20 @@ class SimpleReconstructionModule(LightningModule):
         plt.clf()
         # }}}
 
+        # Plot histgram of anomaly scores by class. {{{
+        # ===
+        fig, ax = plt.subplots()
+        ax.set_xlabel('Anomaly Score')
+        ax.set_ylabel('Number of Instances')
+        ax.set_title('Histgram of anomaly scores')
+        score_by_class = [anomaly_scores[targets == _target] for _target in list(dict.fromkeys(targets))]
+        ax.hist(score_by_class, 50, label=self.test_anomaly_classes, alpha=0.5, histtype='stepfilled')
+        ax.legend()
+        ax.grid(which='major', axis='y', color='gray', alpha=0.8, linestyle="--", linewidth=1)
+        plt.savefig(os.path.join(self.test_output_dir, 'training-hist-by-class'), transparent=True)
+        plt.clf()
+        # }}}
+
         # Plot ROC curve. {{{
         # =====
         fig, ax = plt.subplots()
@@ -178,22 +196,22 @@ class SimpleReconstructionModule(LightningModule):
             np.expand_dims(np.abs(original_img - output_img), axis=2)
         score = score.detach().cpu().numpy()[0]
 
-        fig, ax = plt.subplots(1, 3, squeeze=False)
+        fig, ax = plt.subplots(3, 1, squeeze=False)
         ax[0][0].imshow(original_img)
         ax[0][0].set_xticklabels([])
         ax[0][0].set_yticklabels([])
         ax[0][0].set_title('Input image')
 
-        ax[0][1].imshow(np.clip(output_img, a_min=0, a_max=1))
-        ax[0][1].set_xticklabels([])
-        ax[0][1].set_yticklabels([])
-        ax[0][1].set_title('Output image')
+        ax[1][0].imshow(np.clip(output_img, a_min=0, a_max=1))
+        ax[1][0].set_xticklabels([])
+        ax[1][0].set_yticklabels([])
+        ax[1][0].set_title('Output image')
 
-        im2 = ax[0][2].imshow(np.clip(np.linalg.norm(dif_img, ord=2, axis=2), a_min=0, a_max=1), cmap='cividis',
+        im2 = ax[2][0].imshow(np.clip(np.linalg.norm(dif_img, ord=2, axis=2), a_min=0, a_max=1), cmap='cividis',
                               vmax=1, vmin=0)
-        ax[0][2].set_xticklabels([])
-        ax[0][2].set_yticklabels([])
-        ax[0][2].set_title('Difference image')
+        ax[2][0].set_xticklabels([])
+        ax[2][0].set_yticklabels([])
+        ax[2][0].set_title('Difference image')
         add_colorbar(im2)
 
         fig.suptitle('AnomalyScore: {:.3f}'.format(score))

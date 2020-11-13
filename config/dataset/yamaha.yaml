@@ -1,15 +1,16 @@
 # @package _group_
 name: yamaha
-category: flat
+category: color_pattern_d5_crop
 data_dir: datasets/
 data_info:
-img_w: 4608
-img_h: 1024
+img_w: 512
+img_h: 128
 img_nch: 3
-patch_h: 256
-patch_w: 256
+patch_w: 512
+patch_h: 128
 num_workers: 4
 pin_memory: True
 random_split: True
-batch_size: 4
+batch_size: 64
+test_batch_size: 1
 digit: 0

@@ -16,9 +16,9 @@ lr_policy: None
 
 # --- masking configs ---
 mask:
-  is_loss_mask: True
-  is_blindspot: False
-  is_test_mask: False
+  add_loss_mask: True
+  add_mask: True
+  add_test_mask: False
   mask_mode: chole
   mask_fill:
   mask_overcoat: True

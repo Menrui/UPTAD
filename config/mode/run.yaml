@@ -1,6 +1,7 @@
 # @package _group_
 debug: False
 use_tb: True
-num_epochs: 200
-checkpoint_epochs: 50
+num_epochs: 300
+checkpoint_epoch: 10
+validation_epoch: 5
 snapshot: 50
