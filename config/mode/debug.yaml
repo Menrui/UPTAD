@@ -1,7 +1,16 @@
 # @package _group_
+# --- training config ---
 debug: True
 use_tb: False
 num_epochs: 3
 checkpoint_epoch: 3
 validation_epoch: 1
 snapshot: 3
+
+# --- evaluate config ---
+score_type: L1max
+score:
+  l1_alpha: 5
+  perceptual_alpha: 0.05
+  style_alpha: 120
+  smooth_alpha: 0

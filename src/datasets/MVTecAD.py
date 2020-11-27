@@ -36,7 +36,7 @@ class MVTecAD(torch.utils.data.Dataset):
 
         self.sgm = sgm
         self.size_data = size_data
-        self.is_loss_mask = maskconf.add_loss_mask
+        self.add_loss_mask = maskconf.add_loss_mask
         self.ratio = maskconf.mask_ratio
         self.mask_mode = maskconf.mask_mode
         self.mask_fill = maskconf.mask_fill
@@ -73,7 +73,9 @@ class MVTecAD(torch.utils.data.Dataset):
                 if c == self.normal_class[0]:
                     labels.extend(len(paths) * [0])
                 else:
-                    labels.extend(len(paths) * [1])
+                    for i,abclass in enumerate(self.abnormal_class):
+                        if c == abclass:
+                            labels.extend(len(paths) * [i+1])
 
             self.img_paths = img_paths
             self.labels = labels
@@ -113,8 +115,8 @@ class MVTecAD(torch.utils.data.Dataset):
             input, mask = self.n2v_generate_mask(_input)
         else:
             input, mask = self.generate_mask(original, _input, index)
-        if not self.is_loss_mask:
-            mask = np.zeros(self.size_data, np.float32)
+        if not self.add_loss_mask:
+            mask = np.ones(self.size_data, np.float32)
 
         # Image.fromarray((mask*255).astype(np.uint8).squeeze()).save(f"/home/inagaki/workspace/denoising_ad_mask/sample/{index}.png")
         if self.transform:
@@ -135,11 +137,11 @@ class MVTecAD(torch.utils.data.Dataset):
         overcoat = self.mask_overcoat
         size_data = self.size_data
         ratio = self.ratio
-        num_sample = int(size_data[0] * size_data[1] * ((1 - ratio)/(width*height)))
+        num_sample = int(size_data[0] * size_data[1] * ((1 - ratio)/(width*height+1)))
         # loop = size_data[2] if self.mask_mode=='chole' else 1 if self.mask_mode=='hole' else size_data[2]
         loop = size_data[2]
         
-        mask = np.ones(size_data, np.float32)
+        mask = np.ones(size_data, np.float32) - 1e-5
         fill = np.zeros(size_data, np.float32)
         for ch in range(loop):
             idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
@@ -149,9 +151,9 @@ class MVTecAD(torch.utils.data.Dataset):
             idy_mask = [idy_mask + i//width for i in range(height*width)]
 
             if self.mask_mode == 'chole':
-                mask[idy_mask, idx_mask, ch] = 0
+                mask[idy_mask, idx_mask, ch] = 0 + 1e-5
             else:
-                mask[idy_mask, idx_mask, :] = 0
+                mask[idy_mask, idx_mask, :] = 0 + 1e-5
 
             # if not overcoat:
             #     pass

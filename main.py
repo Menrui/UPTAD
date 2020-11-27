@@ -18,6 +18,7 @@ from src.datasets.MVTecAD_litmodule import MVTecADDataModule
 from src.datasets.YAMAHA_litmodule import YAMAHADataModule
 from src.modules import find_module_using_name
 from src.data_module import get_datamodule
+from src.initializer import init_weight
 from src.callbacks.history import HistoryCallback
 from src.utils import make_logdirs
 
@@ -31,8 +32,12 @@ def main_test(config):
     torch.manual_seed(config.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(config.seed)
-    torch.backends.cudnn.deterministic = True
-    # torch.backends.cudnn.benchmark = True
+    
+    if config.model.mask.add_loss_mask and (config.model.loss_type == 'Texture' or config.model.loss_type == 'Style'):
+        torch.backends.cudnn.enabled = False
+    else:
+        torch.backends.cudnn.deterministic = True
+        # torch.backends.cudnn.benchmark = True
     # }}}
 
     # config update.{{{
@@ -51,36 +56,39 @@ def main_test(config):
     logger = getLogger('root')
     logger.info('Start {} training...'.format(config.workname))
     logger.info('Device: {}'.format(config.device))
+    logger.info('cuDNN enabled is {}'.format(torch.backends.cudnn.enabled))
     # }}}
 
     # Configure train_data loader. {{{
     # =====
     logger.info('Configure training data loader...')
-    # train_loader, val_loader = get_loader(config, is_train=True)
     data_module = get_datamodule(config=config)
     # }}}
 
     model = find_module_using_name('src.modules.{}'.format(config.model.name), config)
-    if config.model.mask.add_mask == 'False':
+    init_weight(config, model)
+    if not config.model.mask.add_mask:
         lit_module = SimpleReconstructionModule(config, model)
+        logger.info("SimpleReconstructionModule Setup")
     else:
         lit_module = MaskReconstructionModule(config, model)
+        logger.info("MaskReconstructionModule Setup")
     trainer = Trainer(
         gpus=[0],
         # fast_dev_run=True,
-        weights_summary='full',
+        # weights_summary='full',
         max_epochs=config.mode.num_epochs,
         amp_backend='native',
         profiler='simple',
         # progress_bar_refresh_rate=0,
         # log_gpu_memory=True,
         check_val_every_n_epoch=config.mode.validation_epoch,
-        callbacks=[HistoryCallback(os.getcwd()),
-                   ModelCheckpoint(
+        callbacks=[ModelCheckpoint(
                         dirpath=str(os.path.join(config.log.training_output_dir, 'checkpoints')),
                         verbose=True,
                         filename='training-{epoch:02d}',
-                        period=config.mode.checkpoint_epoch)
+                        period=config.mode.checkpoint_epoch),
+                    HistoryCallback(os.getcwd())
                 ]
     )
     trainer.fit(lit_module, data_module)

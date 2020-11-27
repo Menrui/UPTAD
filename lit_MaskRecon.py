@@ -15,6 +15,7 @@ from logging import getLogger
 from sklearn.metrics import roc_curve, roc_auc_score, auc
 from src.modules.unet import UNet as unet
 from src.losses import get_loss
+from src.scores import get_scores
 from src.utils import add_colorbar, History
 
 logger = getLogger('root')
@@ -28,15 +29,18 @@ class MaskReconstructionModule(LightningModule):
         self.learning_rate = config.model.lr
         self.beta_1 = config.model.beta_1
         self.beta_2 = config.model.beta_2
+        self.dataset_name = config.dataset.name
 
         # network define
         self.model = model
 
         # error function define
         self.critation = get_loss(config)
+        self.use_loss_mask = config.model.mask.add_loss_mask
 
         # test parameter
         self.digit = config.dataset.digit
+        self.score_func = get_scores(config)
 
         # output dir path
         self.train_output_dir = config.log.training_output_dir
@@ -47,6 +51,9 @@ class MaskReconstructionModule(LightningModule):
         data_dir = os.path.join(config.work_dir, f'{config.dataset.data_dir}', f'{config.dataset.name}', f'{config.dataset.category}', 'test')
         self.test_anomaly_classes = os.listdir(data_dir)
 
+        # self.val_history = History(keys=('val_loss', '_'), output_dir=os.getcwd())
+        # self.train_history = History(keys=('train_loss', '_'), output_dir=os.getcwd())
+
     def forward(self, x):
         return self.model(x)
 
@@ -55,9 +62,13 @@ class MaskReconstructionModule(LightningModule):
         output = self.model(input.float())
 
         # calculate Loss
-        loss_G = self.critation(output * (1 - mask), original * (1 - mask))
+        if self.use_loss_mask:
+            loss_G = self.critation(output * (1 - mask), original * (1 - mask))
+        else:
+            loss_G = self.critation(output, original)
 
         self.log('train_loss', loss_G, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        # self.train_history({'train_loss': loss_G.item()})
         return loss_G
 
     def validation_step(self, batch, batch_idx):
@@ -66,13 +77,18 @@ class MaskReconstructionModule(LightningModule):
         output = self.model(input.float())
 
         # calculate Loss
-        loss_G = self.critation(output * (1 - mask), original * (1 - mask))
+        if self.use_loss_mask:
+            loss_G = self.critation(output * (1 - mask), original * (1 - mask))
+        else:
+            loss_G = self.critation(output, original)
 
         self.log('val_loss', loss_G, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        # self.val_history({'val_loss': loss_G.item()})
         if batch_idx == 0:
             if self.current_epoch == 0:
-                torchvision.utils.save_image(original, os.path.join(self.vis_output_dir, 'validation___.png'), nrow=5, normalize=True)
-                torchvision.utils.save_image(input, os.path.join(self.vis_output_dir, 'validation__.png'), nrow=5, normalize=True)
+                torchvision.utils.save_image(original, os.path.join(self.vis_output_dir, 'original.png'), nrow=5, normalize=True)
+                torchvision.utils.save_image(input, os.path.join(self.vis_output_dir, 'input.png'), nrow=5, normalize=True)
+                torchvision.utils.save_image(mask, os.path.join(self.vis_output_dir, 'loss_mask.png'), nrow=5, normalize=True)
             torchvision.utils.save_image(output, os.path.join(self.vis_output_dir, 'validation_{}.png'.format(self.current_epoch)), nrow=5, normalize=True)
         return loss_G
 
@@ -99,10 +115,16 @@ class MaskReconstructionModule(LightningModule):
         :param outputs: [(anomaly_score, target), ...]
         :return:
         """
+        
+        # self.train_history.plot_graph(filename='traininig_loss.png')
+        # self.train_history.save(filename='training_history.pkl')
+        # self.val_history.plot_graph(filename='validation_loss.png')
+        # self.val_history.save(filename='validation_history.pkl')
+
         # Compute roc curve and auc score. {{{
         # =====
         targets = torch.cat([output[1] for output in outputs]).cpu().numpy()
-        anomaly_scores = torch.cat([output[0] for output in outputs]).numpy()
+        anomaly_scores = torch.cat([output[0] for output in outputs]).cpu().numpy()
         anomaly_labels = np.uint8(targets != self.digit)
         # print(anomaly_labels, anomaly_labels.shape)
 
@@ -157,6 +179,7 @@ class MaskReconstructionModule(LightningModule):
         ax.grid()
         ax.plot(fpr, tpr)  # , marker='o')
         plt.savefig(os.path.join(self.test_output_dir, 'training-roc.png'), transparent=True)
+        plt.savefig(os.path.join(os.getcwd(), 'training-roc.png'), transparent=True)
         plt.clf()
         # }}}
 
@@ -177,16 +200,7 @@ class MaskReconstructionModule(LightningModule):
         return optimiser
 
     def _compute_anomaly_score(self, img, output):
-        # Compute L1 loss
-        res_loss = torch.abs(img - output)
-        # res_loss = res_loss.view(res_loss.size()[0], -1)
-        res_loss = res_loss.view(res_loss.size()[0], -1).detach().cpu().numpy()
-        # res_loss = torch.mean(res_loss, 1)
-        # res_loss = np.mean(res_loss, 1)
-        res_loss = np.max(res_loss, 1)
-        res_loss = torch.from_numpy(res_loss)
-
-        return res_loss
+        return self.score_func(img, output)
 
     def _vis_recon_image(self, original, input, output, mask, score, index):
         original_img = original.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
@@ -195,25 +209,45 @@ class MaskReconstructionModule(LightningModule):
         # mask_img = mask.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
         dif_img = np.abs(original_img - output_img) if original_img.ndim == 3 else \
             np.expand_dims(np.abs(original_img - output_img), axis=2)
-        score = score.detach().cpu().numpy()[0]
+        # score = score.detach().cpu().numpy()[0]
+        score = score.item()
 
-        fig, ax = plt.subplots(3, 1, squeeze=False)
-        ax[0][0].imshow(original_img)
-        ax[0][0].set_xticklabels([])
-        ax[0][0].set_yticklabels([])
-        ax[0][0].set_title('Input image')
+        if self.dataset_name == 'yamaha':
+            fig, ax = plt.subplots(3, 1, squeeze=False)
+            ax[0][0].imshow(original_img)
+            ax[0][0].set_xticklabels([])
+            ax[0][0].set_yticklabels([])
+            ax[0][0].set_title('Input image')
 
-        ax[1][0].imshow(np.clip(output_img, a_min=0, a_max=1))
-        ax[1][0].set_xticklabels([])
-        ax[1][0].set_yticklabels([])
-        ax[1][0].set_title('Output image')
+            ax[1][0].imshow(np.clip(output_img, a_min=0, a_max=1))
+            ax[1][0].set_xticklabels([])
+            ax[1][0].set_yticklabels([])
+            ax[1][0].set_title('Output image')
 
-        im2 = ax[2][0].imshow(np.clip(np.linalg.norm(dif_img, ord=2, axis=2), a_min=0, a_max=1), cmap='cividis',
-                              vmax=1, vmin=0)
-        ax[2][0].set_xticklabels([])
-        ax[2][0].set_yticklabels([])
-        ax[2][0].set_title('Difference image')
-        add_colorbar(im2)
+            im2 = ax[2][0].imshow(np.clip(np.linalg.norm(dif_img, ord=2, axis=2), a_min=0, a_max=1), cmap='cividis',
+                                vmax=1, vmin=0)
+            ax[2][0].set_xticklabels([])
+            ax[2][0].set_yticklabels([])
+            ax[2][0].set_title('Difference image')
+            add_colorbar(im2)
+        else:
+            fig, ax = plt.subplots(1, 3, squeeze=False)
+            ax[0][0].imshow(original_img)
+            ax[0][0].set_xticklabels([])
+            ax[0][0].set_yticklabels([])
+            ax[0][0].set_title('Input image')
+
+            ax[0][1].imshow(np.clip(output_img, a_min=0, a_max=1))
+            ax[0][1].set_xticklabels([])
+            ax[0][1].set_yticklabels([])
+            ax[0][1].set_title('Output image')
+
+            im2 = ax[0][2].imshow(np.clip(np.linalg.norm(dif_img, ord=2, axis=2), a_min=0, a_max=1), cmap='cividis',
+                                vmax=1, vmin=0)
+            ax[0][2].set_xticklabels([])
+            ax[0][2].set_yticklabels([])
+            ax[0][2].set_title('Difference image')
+            add_colorbar(im2)
 
         fig.suptitle('AnomalyScore: {:.3f}'.format(score))
         plt.savefig(os.path.join(self.test_output_dir, 'training-{}.png'.format(index)),

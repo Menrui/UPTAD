@@ -17,9 +17,20 @@ def get_loss(config):
     elif config.model.loss_type == 'L2':
         return nn.MSELoss()
     elif config.model.loss_type == 'SSIM':
-        return pytorch_ssim.SSIM()
+        return SSIMLoss()
     elif config.model.loss_type == 'Style' or config.model.loss_type == 'Perceptual' or config.model.loss_type == 'Texture':
-        return VGGLoss(config.model.loss_type)
+        return VGGLoss(config.model.loss_type,
+                        config.mode.score.l1_alpha,
+                        config.mode.score.perceptual_alpha,
+                        config.mode.score.style_alpha)
+
+class SSIMLoss(nn.Module):
+    def __init__(self, window_size=11):
+        super(SSIMLoss, self).__init__()
+        self.loss = pytorch_ssim.SSIM(window_size=window_size)
+    
+    def __call__(self, output, label):
+        return -self.loss(output, label)
 
 
 class VGGLoss(nn.Module):

@@ -150,7 +150,7 @@ class YAMAHA(torch.utils.data.Dataset):
         size_data = self.size_data
         ratio = self.ratio
         mask = np.ones(size_data, np.float32)
-        num_sample = int(size_data[0] * size_data[1] * ((1 - ratio)/(width*height)))
+        num_sample = int(size_data[0] * size_data[1] * ((1 - ratio)/(width*height + 1)))
         loop = size_data[2] if self.mask_mode=='chole' else 1 if self.mask_mode=='hole' else size_data[2]
         
         for ch in range(loop):
@@ -162,9 +162,9 @@ class YAMAHA(torch.utils.data.Dataset):
             # print(np.max(idx_mask), np.max(idy_mask), mask.shape)
 
             if self.mask_mode == 'chole':
-                mask[idy_mask, idx_mask, ch] = 0
+                mask[idy_mask, idx_mask, ch] = 0 + 1e-5
             else:
-                mask[idy_mask, idx_mask, :] = 0
+                mask[idy_mask, idx_mask, :] = 0 + 1e-5
 
         #     for idy,idx in zip(idy_mask, idx_mask):
         #         # w = int(np.random.randint(width[0], width[1])) if type(width)==tuple else width

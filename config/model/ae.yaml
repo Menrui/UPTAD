@@ -4,7 +4,6 @@ name: ae
 nch: 128
 init_type: normal
 loss_type: L2
-multi: False
 
 # --- optimizer configs ---
 optimizer: adam

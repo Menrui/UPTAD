@@ -31,8 +31,8 @@ class MVTecADDataModule(LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         if stage == 'fit' or stage is None:
             transform = torchvision.transforms.Compose([
-                transforms.Resize((self.data_config.img_h, self.data_config.img_w)),
-                transforms.RandomCrop((self.data_config.patch_h, self.data_config.patch_w)),
+                # transforms.Resize((self.data_config.img_h, self.data_config.img_w)),
+                # transforms.RandomCrop((self.data_config.patch_h, self.data_config.patch_w)),
                 transforms.RandomFlip(),
                 transforms.ToTensor(),
                 transforms.Normalize([0.5], [0.5])
@@ -50,8 +50,8 @@ class MVTecADDataModule(LightningDataModule):
 
         if stage == 'test' or stage is None:
             transform = torchvision.transforms.Compose([
-                transforms.Resize((self.data_config.img_h, self.data_config.img_w)),
-                transforms.UnifromSample((self.data_config.patch_h, self.data_config.patch_w)),
+                # transforms.Resize((self.data_config.img_h, self.data_config.img_w)),
+                # transforms.UnifromSample((self.data_config.patch_h, self.data_config.patch_w)),
                 transforms.ToTensor(),
                 transforms.Normalize([0.5], [0.5])
             ])
