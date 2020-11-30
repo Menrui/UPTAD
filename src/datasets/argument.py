@@ -24,7 +24,7 @@ def generate_noise(mask_config, size_data, original, input):
             pass
         elif category == "Rectangle":
             pass
-        elif category == "Ellipse":
+        elif category == "Circle":
             pass
         elif category == "Line":
             pass
@@ -72,7 +72,7 @@ def add_rectangle(input, color, size_data, mask_size, ratio):
 
 def add_circle(input, color, size_data, mask_size, ratio):
     width = mask_size[0]
-    height = mask_size[0]
+    height = mask_size[1]
     size_data = size_data
     ratio = ratio
     num_sample = int(size_data[0] * size_data[1] * ((1-ratio)/(math.pi*(width/2)**2)))
@@ -82,3 +82,7 @@ def add_circle(input, color, size_data, mask_size, ratio):
     for ch in range(loop):
         idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
         idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
+
+        for idy,idx in zip(idy_mask, idx_mask):
+            # mask[idy:idy+h, idx:idx+w, ch] = 0
+            cv2.circle(mask, (idx, idy), width/2, (0,0,0), thickness=-1)
