@@ -75,6 +75,7 @@ def main_test(config):
         logger.info("MaskReconstructionModule Setup")
     trainer = Trainer(
         gpus=[0],
+        deterministic=True,
         # fast_dev_run=True,
         # weights_summary='full',
         max_epochs=config.mode.num_epochs,
