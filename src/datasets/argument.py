@@ -14,75 +14,87 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 
-def generate_noise(mask_config, size_data, original, input):
-    mode = mask_config.mode
-    category = mask_config.category
-    color = mask_config.color # white, black, mean, mixture
-
-    if mode == "assign":
-        if category == "Gaussian":
-            pass
-        elif category == "Rectangle":
-            pass
-        elif category == "Circle":
-            pass
-        elif category == "Line":
-            pass
-        elif category == "Structual":
-            pass
-        elif category == "All"
-    elif mode == "random":
-        categorys = 0
-        https://note.nkmk.me/python-random-choice-sample-choices/
-        pass
-
-
-def add_gauss(input, size_data, sigma):
-    noise = sigma / 255.0 * np.random.randn(size_data[0], size_data[1], size_data[2])
-    input = input + noise
-    return input
-
-
-def add_rectangle(input, color, size_data, mask_size, ratio):
-    width = mask_size[0]
-    height = mask_size[1]
-    size_data = size_data
-    ratio = ratio
-    num_sample = int(size_data[0] * size_data[1] * ((1 - ratio)/(width*height+1)))
-    loop = size_data[2]
+class NoiseGenerater():
     
-    mask = np.ones(size_data, np.float32) - 1e-5
-    # fill = np.zeros(size_data, np.float32)
-    for ch in range(loop):
-        idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
-        idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
-
-        idx_mask = [idx_mask + i%width for i in range(height*width)]
-        idy_mask = [idy_mask + i//width for i in range(height*width)]
-
-        if self.mask_mode == 'chole':
-            mask[idy_mask, idx_mask, ch] = 0 + 1e-5
+    def __init__(mask_config, size_data):
+        self.mode = mask_config.mode
+        if self.mode == "random":
+            self.categorys = mask_config.category.split('-')
         else:
-            mask[idy_mask, idx_mask, :] = 0 + 1e-5
-    
-    input = input*mask
-    
-    return input, mask
+            self.category = mask_config.category
+
+        self.color = mask_config.color # white, black, mean, mixture
+        self.size_data = size_data
+
+    def __call__():
 
 
-def add_circle(input, color, size_data, mask_size, ratio):
-    width = mask_size[0]
-    height = mask_size[1]
-    size_data = size_data
-    ratio = ratio
-    num_sample = int(size_data[0] * size_data[1] * ((1-ratio)/(math.pi*(width/2)**2)))
-    loop = size_data[2]
+    def generate_noise(mode, category, color, original, input):
 
-    mask = np.ones(size_data, np.float32) - 1e-5
-    for ch in range(loop):
-        idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
-        idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
+        if mode == "assign":
+            if category == "Gaussian":
+                pass
+            elif category == "Rectangle":
+                pass
+            elif category == "Circle":
+                pass
+            elif category == "Line":
+                pass
+            elif category == "Structual":
+                pass
+            elif category == "All"
+        elif mode == "random":
+            categorys = 0
+            https://note.nkmk.me/python-random-choice-sample-choices/
+            pass
 
-        for idy,idx in zip(idy_mask, idx_mask):
-            # mask[idy:idy+h, idx:idx+w, ch] = 0
-            cv2.circle(mask, (idx, idy), width/2, (0,0,0), thickness=-1)
+
+    def add_gauss(input, size_data, sigma):
+        noise = sigma / 255.0 * np.random.randn(size_data[0], size_data[1], size_data[2])
+        input = input + noise
+        return input
+
+
+    def add_rectangle(input, color, size_data, mask_size, ratio):
+        width = mask_size[0]
+        height = mask_size[1]
+        size_data = size_data
+        ratio = ratio
+        num_sample = int(size_data[0] * size_data[1] * ((1 - ratio)/(width*height+1)))
+        loop = size_data[2]
+        
+        mask = np.ones(size_data, np.float32) - 1e-5
+        # fill = np.zeros(size_data, np.float32)
+        for ch in range(loop):
+            idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
+            idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
+
+            idx_mask = [idx_mask + i%width for i in range(height*width)]
+            idy_mask = [idy_mask + i//width for i in range(height*width)]
+
+            if self.mask_mode == 'chole':
+                mask[idy_mask, idx_mask, ch] = 0 + 1e-5
+            else:
+                mask[idy_mask, idx_mask, :] = 0 + 1e-5
+        
+        input = input*mask
+        
+        return input, mask
+
+
+    def add_circle(input, color, size_data, mask_size, ratio):
+        width = mask_size[0]
+        height = mask_size[1]
+        size_data = size_data
+        ratio = ratio
+        num_sample = int(size_data[0] * size_data[1] * ((1-ratio)/(math.pi*(width/2)**2)))
+        loop = size_data[2]
+
+        mask = np.ones(size_data, np.float32) - 1e-5
+        for ch in range(loop):
+            idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
+            idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
+
+            for idy,idx in zip(idy_mask, idx_mask):
+                # mask[idy:idy+h, idx:idx+w, ch] = 0
+                cv2.circle(mask, (idx, idy), width/2, (0,0,0), thickness=-1)
