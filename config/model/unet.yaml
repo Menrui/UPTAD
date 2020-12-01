@@ -18,11 +18,16 @@ mask:
   add_loss_mask: True
   add_mask: True
   add_test_mask: False
-  mask_mode: chole
   mask_fill:
-  mask_overcoat: True
-  mask_shape: rectangle
+  mask_overcoat: 
+  mask_shape: 
   mask_w: 3
   mask_h: 3
-  add_gauss: False
+  add_gauss: 
   mask_ratio: 0.85
+
+  mask_mode: sinlge
+  mask_category: rec
+  line:
+    degree: 0-90
+    thickness: 4

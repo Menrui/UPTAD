@@ -21,8 +21,10 @@ class NoiseGrinder():
         self.mode = mask_config.mode
         if self.mode == "random":
             self.categorys = mask_config.category.split('-')
+            self.colors = mask_config.color.split('-')
         elif self.mode == "single":
             self.category = mask_config.category
+            self.color = mask_config.color
 
         self.color = mask_config.color # white, black, mean, mixture
         self.size_data = size_data
@@ -32,33 +34,35 @@ class NoiseGrinder():
         self.thickness = mask_config.line.thickness
         self.sgm = sgm
 
+
     def __call__(original, input):
         if self.mode == "single":
             generate_noise(self.category, self.color, original, input)
         elif self.mode == "random":
-            index = random.randint(0, len(self.categorys))
-            generate_noise(self.categorys[index], self.color, original, input)
+            index_category = random.randint(0, len(self.categorys))
+            index_color = random.randint(0, len(self.colors))
+            generate_noise(self.categorys[index_category], self.colors[index_color], original, input)
 
 
     def grind_noise(category, color, original, input):
 
         if category == "gauss":
-            input, mask = add_gauss(input)
+            input, mask = _add_gauss(input)
         elif category == "rec":
-            input, mask = add_rectangle(input)
+            input, mask = _add_rectangle(input, original, color)
         elif category == "cir":
-            input, mask = add_circle(input)
+            input, mask = _add_circle(input, color)
         elif category == "line":
-            input, mask = add_line(input)
+            input, mask = _add_line(input, color)
 
 
-    def add_gauss(input):
+    def _add_gauss(input):
         noise = self.sgm / 255.0 * np.random.randn(self.size_data[0], self.size_data[1], self.size_data[2])
         input = input + noise
         return input, noise
 
 
-    def add_rectangle(input, color):
+    def _add_rectangle(input, original, color):
         height = self.mask_size[0]
         width = self.mask_size[1]
         size_data = self.size_data
@@ -75,16 +79,20 @@ class NoiseGrinder():
             idx_mask = [idx_mask + i%width for i in range(height*width)]
             idy_mask = [idy_mask + i//width for i in range(height*width)]
 
-            if color == 'chole':
+            if color == 'c':
                 mask[idy_mask, idx_mask, random.randint(0,size_data[2])] = 0 + 1e-5
-            else:
+            elif color == 'b':
                 mask[idy_mask, idx_mask, :] = 0 + 1e-5
+            elif color == 'm2':
+                mask[idy_mask, idx_mask, 0] = np.mean(original[idy_mask, idx_mask, 0])
+                mask[idy_mask, idx_mask, 1] = np.mean(original[idy_mask, idx_mask, 1])
+                mask[idy_mask, idx_mask, 2] = np.mean(original[idy_mask, idx_mask, 2])
         
         input = input*mask
         return input, mask
 
 
-    def add_circle(input, color):
+    def _add_circle(input, color):
         radius = self.mask_size[0]/2
         overcoat = self.mask_overcoat
         size_data = self.size_data
@@ -105,7 +113,7 @@ class NoiseGrinder():
         return input, mask
 
 
-    def add_line(input, color):
+    def _add_line(input, color):
         def getXY(r, degree):
             # 度をラジアンに変換
             rad = math.radians(degree)
@@ -135,5 +143,9 @@ class NoiseGrinder():
                 cv2.line(mask, (idx, idy), (xy[0]+idx, xy[1]+idy), (0,0,0))
         input = input*mask
         return input, mask
+
+    def _color_pick(original, mask, color):
+        if color == 'm2':
+            np.mean(original[mask==0])
         
 

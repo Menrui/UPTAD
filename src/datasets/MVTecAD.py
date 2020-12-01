@@ -133,99 +133,99 @@ class MVTecAD(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.img_paths)
 
-    def generate_mask(self, original, input, index):
-        width = self.mask_size[0]
-        height = self.mask_size[1]
-        overcoat = self.mask_overcoat
-        size_data = self.size_data
-        ratio = self.ratio
-        num_sample = int(size_data[0] * size_data[1] * ((1 - ratio)/(width*height+1)))
-        # loop = size_data[2] if self.mask_mode=='chole' else 1 if self.mask_mode=='hole' else size_data[2]
-        loop = size_data[2]
+    # def generate_mask(self, original, input, index):
+    #     width = self.mask_size[0]
+    #     height = self.mask_size[1]
+    #     overcoat = self.mask_overcoat
+    #     size_data = self.size_data
+    #     ratio = self.ratio
+    #     num_sample = int(size_data[0] * size_data[1] * ((1 - ratio)/(width*height+1)))
+    #     # loop = size_data[2] if self.mask_mode=='chole' else 1 if self.mask_mode=='hole' else size_data[2]
+    #     loop = size_data[2]
         
-        mask = np.ones(size_data, np.float32) - 1e-5
-        fill = np.zeros(size_data, np.float32)
-        for ch in range(loop):
-            idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
-            idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
+    #     mask = np.ones(size_data, np.float32) - 1e-5
+    #     fill = np.zeros(size_data, np.float32)
+    #     for ch in range(loop):
+    #         idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
+    #         idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
 
-            idx_mask = [idx_mask + i%width for i in range(height*width)]
-            idy_mask = [idy_mask + i//width for i in range(height*width)]
+    #         idx_mask = [idx_mask + i%width for i in range(height*width)]
+    #         idy_mask = [idy_mask + i//width for i in range(height*width)]
 
-            if self.mask_mode == 'chole':
-                mask[idy_mask, idx_mask, ch] = 0 + 1e-5
-            else:
-                mask[idy_mask, idx_mask, :] = 0 + 1e-5
+    #         if self.mask_mode == 'chole':
+    #             mask[idy_mask, idx_mask, ch] = 0 + 1e-5
+    #         else:
+    #             mask[idy_mask, idx_mask, :] = 0 + 1e-5
 
-            # if not overcoat:
-            #     pass
-            # for idy,idx in zip(idy_mask, idx_mask):
-            #     # w = int(np.random.randint(width[0], width[1])) if type(width)==tuple else width
-            #     # h = int(np.random.randint(height[0], height[1])) if type(height)==tuple else height
-            #     w = width
-            #     h = height
-            #     if self.mask_mode=='chole':
-            #         mask[idy:idy+h, idx:idx+w, ch] = 0
-            #         # fill[idy:idy+h, idx:idx+w, ch] = np.mean(original[idy:idy+h, idx:idx+w, ch])
-            #     else:
-            #         mask[idy:idy+h, idx:idx+w, :] = 0
-            #         # if self.mask_fill == 'lmean':
-            #         #     fill[idy:idy+h, idx:idx+w, 0] = np.mean(original[idy:idy+h, idx:idx+w, 0])
-            #         #     fill[idy:idy+h, idx:idx+w, 1] = np.mean(original[idy:idy+h, idx:idx+w, 1])
-            #         #     fill[idy:idy+h, idx:idx+w, 2] = np.mean(original[idy:idy+h, idx:idx+w, 2])
-            #         # elif self.mask_fill == 'chmean':
-            #         #     fill[idy:idy+h, idx:idx+w, :] = np.mean(original[idy:idy+h, idx:idx+w, :])
-            #         # else:
-            #         #     pass
+    #         # if not overcoat:
+    #         #     pass
+    #         # for idy,idx in zip(idy_mask, idx_mask):
+    #         #     # w = int(np.random.randint(width[0], width[1])) if type(width)==tuple else width
+    #         #     # h = int(np.random.randint(height[0], height[1])) if type(height)==tuple else height
+    #         #     w = width
+    #         #     h = height
+    #         #     if self.mask_mode=='chole':
+    #         #         mask[idy:idy+h, idx:idx+w, ch] = 0
+    #         #         # fill[idy:idy+h, idx:idx+w, ch] = np.mean(original[idy:idy+h, idx:idx+w, ch])
+    #         #     else:
+    #         #         mask[idy:idy+h, idx:idx+w, :] = 0
+    #         #         # if self.mask_fill == 'lmean':
+    #         #         #     fill[idy:idy+h, idx:idx+w, 0] = np.mean(original[idy:idy+h, idx:idx+w, 0])
+    #         #         #     fill[idy:idy+h, idx:idx+w, 1] = np.mean(original[idy:idy+h, idx:idx+w, 1])
+    #         #         #     fill[idy:idy+h, idx:idx+w, 2] = np.mean(original[idy:idy+h, idx:idx+w, 2])
+    #         #         # elif self.mask_fill == 'chmean':
+    #         #         #     fill[idy:idy+h, idx:idx+w, :] = np.mean(original[idy:idy+h, idx:idx+w, :])
+    #         #         # else:
+    #         #         #     pass
 
-        # mask, fill = calc_mask(loop=loop, num_sample=num_sample, size_data=size_data, width=width, height=height, 
-        #                             mask_mode=self.mask_mode, mask_fill=self.mask_fill)
-        if self.mask_mode=='normal':
-            input = input + self.noise[index]*(1-mask)
-        else:
-            input = input*mask
-            # if self.mask_fill is not None and 'mean' in self.mask_fill:
-            #     input = input + fill
-        return input, mask
+    #     # mask, fill = calc_mask(loop=loop, num_sample=num_sample, size_data=size_data, width=width, height=height, 
+    #     #                             mask_mode=self.mask_mode, mask_fill=self.mask_fill)
+    #     if self.mask_mode=='normal':
+    #         input = input + self.noise[index]*(1-mask)
+    #     else:
+    #         input = input*mask
+    #         # if self.mask_fill is not None and 'mean' in self.mask_fill:
+    #         #     input = input + fill
+    #     return input, mask
 
-    def n2v_generate_mask(self, input):
-        ratio = self.ratio
-        # size_window = self.size_window
-        # size_data = self.size_data
-        size_window = (5,5)
-        size_data = input.shape
-        num_sample = int(size_data[0] * size_data[1] * (1 - ratio))
+    # def n2v_generate_mask(self, input):
+    #     ratio = self.ratio
+    #     # size_window = self.size_window
+    #     # size_data = self.size_data
+    #     size_window = (5,5)
+    #     size_data = input.shape
+    #     num_sample = int(size_data[0] * size_data[1] * (1 - ratio))
 
-        mask = np.ones(size_data)
-        output = input
+    #     mask = np.ones(size_data)
+    #     output = input
 
-        for ich in range(size_data[2]):
-            # mask is the pixels predicted by N2V
-            idy_mask = np.random.randint(0, size_data[0], num_sample)
-            idx_mask = np.random.randint(0, size_data[1], num_sample)
+    #     for ich in range(size_data[2]):
+    #         # mask is the pixels predicted by N2V
+    #         idy_mask = np.random.randint(0, size_data[0], num_sample)
+    #         idx_mask = np.random.randint(0, size_data[1], num_sample)
 
-            # neigh is the pixel that replaces the mask point
-            idy_neigh = np.random.randint(-size_window[0] // 2 + size_window[0] % 2,
-                                          size_window[0] // 2 + size_window[0] % 2,
-                                          num_sample)
-            idx_neigh = np.random.randint(-size_window[1] // 2 + size_window[1] % 2,
-                                          size_window[1] // 2 + size_window[1] % 2,
-                                          num_sample)
+    #         # neigh is the pixel that replaces the mask point
+    #         idy_neigh = np.random.randint(-size_window[0] // 2 + size_window[0] % 2,
+    #                                       size_window[0] // 2 + size_window[0] % 2,
+    #                                       num_sample)
+    #         idx_neigh = np.random.randint(-size_window[1] // 2 + size_window[1] % 2,
+    #                                       size_window[1] // 2 + size_window[1] % 2,
+    #                                       num_sample)
 
-            idy_mask_neigh = idy_mask + idy_neigh
-            idy_mask_neigh = idy_mask_neigh + (idy_mask_neigh < 0) * size_data[0] - \
-                             (idy_mask_neigh >= size_data[0]) * size_data[0]
-            idx_mask_neigh = idx_mask + idx_neigh
-            idx_mask_neigh = idx_mask_neigh + (idx_mask_neigh < 0) * size_data[1] - \
-                             (idx_mask_neigh >= size_data[1]) * size_data[1]
+    #         idy_mask_neigh = idy_mask + idy_neigh
+    #         idy_mask_neigh = idy_mask_neigh + (idy_mask_neigh < 0) * size_data[0] - \
+    #                          (idy_mask_neigh >= size_data[0]) * size_data[0]
+    #         idx_mask_neigh = idx_mask + idx_neigh
+    #         idx_mask_neigh = idx_mask_neigh + (idx_mask_neigh < 0) * size_data[1] - \
+    #                          (idx_mask_neigh >= size_data[1]) * size_data[1]
 
-            id_msk = (idy_mask, idx_mask, ich)
-            id_msk_neigh = (idy_mask_neigh, idx_mask_neigh, ich)
+    #         id_msk = (idy_mask, idx_mask, ich)
+    #         id_msk_neigh = (idy_mask_neigh, idx_mask_neigh, ich)
 
-            output[id_msk] = input[id_msk_neigh]
-            mask[id_msk] = 0.0
+    #         output[id_msk] = input[id_msk_neigh]
+    #         mask[id_msk] = 0.0
 
-        return output, mask
+    #     return output, mask
 
 
 if __name__ == '__main__':
