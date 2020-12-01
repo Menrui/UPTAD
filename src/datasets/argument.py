@@ -5,6 +5,7 @@ from PIL import Image
 import cv2
 import glob
 import copy
+import random
 
 import torch
 import torchvision
@@ -14,54 +15,56 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 
-class NoiseGenerater():
+class NoiseGrinder():
     
-    def __init__(mask_config, size_data):
+    def __init__(mask_config, size_data, sgm):
         self.mode = mask_config.mode
         if self.mode == "random":
             self.categorys = mask_config.category.split('-')
-        else:
+        elif self.mode == "single":
             self.category = mask_config.category
 
         self.color = mask_config.color # white, black, mean, mixture
         self.size_data = size_data
+        self.mask_size = (mask_config.mask_h, mask_config.mask_w)
+        self.ratio = mask_config.mask_ratio
+        self.degree = mask_config.line.degree
+        self.thickness = mask_config.line.thickness
+        self.sgm = sgm
 
-    def __call__():
-
-
-    def generate_noise(mode, category, color, original, input):
-
-        if mode == "assign":
-            if category == "Gaussian":
-                pass
-            elif category == "Rectangle":
-                pass
-            elif category == "Circle":
-                pass
-            elif category == "Line":
-                pass
-            elif category == "Structual":
-                pass
-            elif category == "All"
-        elif mode == "random":
-            categorys = 0
-            https://note.nkmk.me/python-random-choice-sample-choices/
-            pass
+    def __call__(original, input):
+        if self.mode == "single":
+            generate_noise(self.category, self.color, original, input)
+        elif self.mode == "random":
+            index = random.randint(0, len(self.categorys))
+            generate_noise(self.categorys[index], self.color, original, input)
 
 
-    def add_gauss(input, size_data, sigma):
-        noise = sigma / 255.0 * np.random.randn(size_data[0], size_data[1], size_data[2])
+    def grind_noise(category, color, original, input):
+
+        if category == "gauss":
+            input, mask = add_gauss(input)
+        elif category == "rec":
+            input, mask = add_rectangle(input)
+        elif category == "cir":
+            input, mask = add_circle(input)
+        elif category == "line":
+            input, mask = add_line(input)
+
+
+    def add_gauss(input):
+        noise = self.sgm / 255.0 * np.random.randn(self.size_data[0], self.size_data[1], self.size_data[2])
         input = input + noise
-        return input
+        return input, noise
 
 
-    def add_rectangle(input, color, size_data, mask_size, ratio):
-        width = mask_size[0]
-        height = mask_size[1]
-        size_data = size_data
-        ratio = ratio
+    def add_rectangle(input, color):
+        height = self.mask_size[0]
+        width = self.mask_size[1]
+        size_data = self.size_data
+        ratio = self.ratio
         num_sample = int(size_data[0] * size_data[1] * ((1 - ratio)/(width*height+1)))
-        loop = size_data[2]
+        loop = 1
         
         mask = np.ones(size_data, np.float32) - 1e-5
         # fill = np.zeros(size_data, np.float32)
@@ -72,29 +75,65 @@ class NoiseGenerater():
             idx_mask = [idx_mask + i%width for i in range(height*width)]
             idy_mask = [idy_mask + i//width for i in range(height*width)]
 
-            if self.mask_mode == 'chole':
-                mask[idy_mask, idx_mask, ch] = 0 + 1e-5
+            if color == 'chole':
+                mask[idy_mask, idx_mask, random.randint(0,size_data[2])] = 0 + 1e-5
             else:
                 mask[idy_mask, idx_mask, :] = 0 + 1e-5
         
         input = input*mask
-        
         return input, mask
 
 
-    def add_circle(input, color, size_data, mask_size, ratio):
-        width = mask_size[0]
-        height = mask_size[1]
-        size_data = size_data
-        ratio = ratio
-        num_sample = int(size_data[0] * size_data[1] * ((1-ratio)/(math.pi*(width/2)**2)))
-        loop = size_data[2]
+    def add_circle(input, color):
+        radius = self.mask_size[0]/2
+        overcoat = self.mask_overcoat
+        size_data = self.size_data
+        ratio = self.ratio
+        num_sample = int(size_data[0] * size_data[1] * ((1-ratio)/(math.pi*(radius)**2)))
+        loop = 1
 
         mask = np.ones(size_data, np.float32) - 1e-5
         for ch in range(loop):
-            idy_mask = np.random.randint(0, size_data[0]-height, num_sample)
-            idx_mask = np.random.randint(0, size_data[1]-width, num_sample)
+            idy_mask = np.random.randint(radius, size_data[0]-radius, num_sample)
+            idx_mask = np.random.randint(radius, size_data[1]-radius, num_sample)
 
             for idy,idx in zip(idy_mask, idx_mask):
                 # mask[idy:idy+h, idx:idx+w, ch] = 0
-                cv2.circle(mask, (idx, idy), width/2, (0,0,0), thickness=-1)
+                cv2.circle(mask, (idx, idy), radius, (0,0,0), thickness=-1)
+        
+        input = input*mask
+        return input, mask
+
+
+    def add_line(input, color):
+        def getXY(r, degree):
+            # 度をラジアンに変換
+            rad = math.radians(degree)
+            x = r * math.cos(rad)
+            y = r * math.sin(rad)
+            print(x, y)
+            return x, y
+        length = self.mask_size[0]
+        
+        thickness = self.thickness
+        ratio = self.ratio
+        num_sample = int(size_data[0] * size_data[1] * ((1-ratio)/(length * thickness)))
+        loop = 1
+
+        mask = np.ones(size_data, np.float32) - 1e-5
+        for ch in range(loop)
+            idy_mask = np.random.randint(0, size_data[0]-length, num_sample)
+            idx_mask = np.random.randint(0, size_data[1]-length, num_sample)
+
+            for idy,idx in zip(idy_mask, idx_mask):
+                if "-" not in self.degree
+                    degree = self.degree
+                else:
+                    degree = degree.split("-")
+                    degree = random.randint(int(degree[0]), int(degree[1]))
+                xy = getXY(length, degree)
+                cv2.line(mask, (idx, idy), (xy[0]+idx, xy[1]+idy), (0,0,0))
+        input = input*mask
+        return input, mask
+        
+

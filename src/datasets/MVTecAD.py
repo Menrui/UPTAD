@@ -13,6 +13,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numba
 
+from argument import NoiseGrinder
 
 class MVTecAD(torch.utils.data.Dataset):
 
@@ -33,6 +34,8 @@ class MVTecAD(torch.utils.data.Dataset):
         self.category = category
         self.train = train
         self.transform = transform
+
+        self.noise_grinder = NoiseGrinder(maskconf, sgm=sgm)
 
         self.sgm = sgm
         self.size_data = size_data
@@ -102,8 +105,6 @@ class MVTecAD(torch.utils.data.Dataset):
         else:
             ground_truth = np.zeros([self.size_data[0], self.size_data[1], 1])
 
-        # original = np.array(Image.open(img_path).convert('RGB')) if self.size_data[2]==3 else np.array(Image.open(img_path).convert('L'))
-        # original = original/255.0
         original = plt.imread(img_path)
 
         original = np.expand_dims(original, axis=2) if original.ndim==2 else original
@@ -111,12 +112,13 @@ class MVTecAD(torch.utils.data.Dataset):
         # _input = copy.deepcopy(original) if not self.add_gauss else copy.deepcopy(label)
         
         _input  = copy.deepcopy(original)
-        if self.mask_mode == 'n2v':
-            input, mask = self.n2v_generate_mask(_input)
-        else:
-            input, mask = self.generate_mask(original, _input, index)
-        if not self.add_loss_mask:
-            mask = np.ones(self.size_data, np.float32)
+        # if self.mask_mode == 'n2v':
+        #     input, mask = self.n2v_generate_mask(_input)
+        # else:
+        #     input, mask = self.generate_mask(original, _input, index)
+        # if not self.add_loss_mask:
+        #     mask = np.ones(self.size_data, np.float32)
+        input, mask = self.noise_grinder(_input)
 
         # Image.fromarray((mask*255).astype(np.uint8).squeeze()).save(f"/home/inagaki/workspace/denoising_ad_mask/sample/{index}.png")
         if self.transform:
