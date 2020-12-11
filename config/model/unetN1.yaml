@@ -1,5 +1,5 @@
 # @package _group_
-name: unet
+name: unetN1
 # --- model config ---
 nch: 128
 init_type: normal

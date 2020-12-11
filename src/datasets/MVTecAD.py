@@ -13,7 +13,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numba
 
-from argument import NoiseGrinder
+from src.datasets.argument import NoiseGrinder
 
 class MVTecAD(torch.utils.data.Dataset):
 
@@ -35,7 +35,7 @@ class MVTecAD(torch.utils.data.Dataset):
         self.train = train
         self.transform = transform
 
-        self.noise_grinder = NoiseGrinder(maskconf, sgm=sgm)
+        self.noise_grinder = NoiseGrinder(maskconf, size_data=size_data, noise_sgm=sgm)
 
         self.sgm = sgm
         self.size_data = size_data
@@ -118,7 +118,7 @@ class MVTecAD(torch.utils.data.Dataset):
         #     input, mask = self.generate_mask(original, _input, index)
         # if not self.add_loss_mask:
         #     mask = np.ones(self.size_data, np.float32)
-        input, mask = self.noise_grinder(_input)
+        input, mask = self.noise_grinder(original, _input)
 
         # Image.fromarray((mask*255).astype(np.uint8).squeeze()).save(f"/home/inagaki/workspace/denoising_ad_mask/sample/{index}.png")
         if self.transform:

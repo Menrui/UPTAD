@@ -26,23 +26,32 @@ if __name__ == '__main__':
     config = compose(config_name='config.yaml')
     config.work_dir = os.getcwd()
 
-    config.dataset.patch_w = 256
-    config.dataset.patch_h = 256
-    config.model.mask.mask_mode = 'chole'
-    config.model.mask.mask_ratio = 0.85
-    config.model.mask.mask_w = 3
-    config.model.mask.mask_h = 3
+    categorys = ['cir', 'line', 'rec']
+    sigmas = [1,3,5]
+    mask_ratios = [0.85, 0.75, 0.65]
+
+    for category in categorys:
+        for sigma in sigmas:
+            for ratio in mask_ratios:
 
 
-    data_module = get_datamodule(config=config)
-    data_module.setup(stage='fit')
-    loader = data_module.train_dataloader()
+                config.model.mask.category=category
+                config.model.mask.size=10 
+                config.model.mask.mu=0 
+                config.model.mask.sigma=sigma
+                config.model.mask.mask_ratio=ratio
+                config.model.mask.color='c'
 
-    for i, batch in enumerate(loader):
-        img, input, label, mask, _, target = batch
-        if i % 10 == 0:
-            Image.fromarray(((img.detach().cpu().numpy().transpose(0, 2, 3, 1)[0] * 0.5 + 0.5)*255).astype(np.uint8)).save(f'./sample/original_{i}.png')
-            Image.fromarray(((input.detach().cpu().numpy().transpose(0, 2, 3, 1)[0] * 0.5 + 0.5)*255).astype(np.uint8)).save(f'./sample/{os.path.basename(args.output_dir)}input_{i}.png')
-            Image.fromarray(((mask.detach().cpu().numpy().transpose(0, 2, 3, 1)[0])*255).astype(np.uint8)).save(f'./sample/{os.path.basename(args.output_dir)}mask_{config.model.mask.mask_mode}_{i}.png')
-            print(i)
+                data_module = get_datamodule(config=config)
+                data_module.setup(stage='fit')
+                loader = data_module.val_dataloader()
+
+                for i, batch in enumerate(loader):
+                    img, input, label, mask, _, target = batch
+                    if i % 10 == 0:
+                        Image.fromarray(((img.detach().cpu().numpy().transpose(0, 2, 3, 1)[0] * 0.5 + 0.5)*255).astype(np.uint8)).save(f'./sample/original_{i}.png')
+                        Image.fromarray(((input.detach().cpu().numpy().transpose(0, 2, 3, 1)[0] * 0.5 + 0.5)*255).astype(np.uint8)).save(f'./sample/{os.path.basename(args.output_dir)}input_{config.model.mask.category}_sigma{config.model.mask.sigma}_ratio{config.model.mask.mask_ratio}_{i}.png')
+                        Image.fromarray(((mask.detach().cpu().numpy().transpose(0, 2, 3, 1)[0])*255).astype(np.uint8)).save(f'./sample/{os.path.basename(args.output_dir)}mask_{config.model.mask.category}_sigma{config.model.mask.sigma}_ratio{config.model.mask.mask_ratio}_{i}.png')
+                        print(i)
+                    break
 

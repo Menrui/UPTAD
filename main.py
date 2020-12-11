@@ -87,8 +87,10 @@ def main_test(config):
         callbacks=[ModelCheckpoint(
                         dirpath=str(os.path.join(config.log.training_output_dir, 'checkpoints')),
                         verbose=True,
+                        save_last=True,
                         filename='training-{epoch:02d}',
-                        period=config.mode.checkpoint_epoch),
+                        period=config.mode.checkpoint_epoch
+                    ),
                     HistoryCallback(os.getcwd())
                 ]
     )

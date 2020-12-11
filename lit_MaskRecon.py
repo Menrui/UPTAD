@@ -86,10 +86,10 @@ class MaskReconstructionModule(LightningModule):
         # self.val_history({'val_loss': loss_G.item()})
         if batch_idx == 0:
             if self.current_epoch == 0:
-                torchvision.utils.save_image(original, os.path.join(self.vis_output_dir, 'original.png'), nrow=5, normalize=True)
-                torchvision.utils.save_image(input, os.path.join(self.vis_output_dir, 'input.png'), nrow=5, normalize=True)
-                torchvision.utils.save_image(mask, os.path.join(self.vis_output_dir, 'loss_mask.png'), nrow=5, normalize=True)
-            torchvision.utils.save_image(output, os.path.join(self.vis_output_dir, 'validation_{}.png'.format(self.current_epoch)), nrow=5, normalize=True)
+                torchvision.utils.save_image(original, os.path.join(self.vis_output_dir, 'original.png'), nrow=3, normalize=True)
+                torchvision.utils.save_image(input, os.path.join(self.vis_output_dir, 'input.png'), nrow=3, normalize=True)
+                torchvision.utils.save_image(mask, os.path.join(self.vis_output_dir, 'loss_mask.png'), nrow=3, normalize=True)
+            torchvision.utils.save_image(output, os.path.join(self.vis_output_dir, 'validation_{}.png'.format(self.current_epoch)), nrow=3, normalize=True)
         return loss_G
 
     def test_step(self, batch, batch_idx):

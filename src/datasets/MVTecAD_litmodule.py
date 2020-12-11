@@ -43,7 +43,7 @@ class MVTecADDataModule(LightningDataModule):
                 maskconf=self.mask_config
             )
             n_samples = len(dataset)
-            train_size = int(n_samples * 0.8)
+            train_size = int(n_samples * (1-0.036))
             val_size = n_samples - train_size
             self.train_dataset, self.val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
             logger.info('train image shape: {}'.format(self.train_dataset[0][0].shape))
