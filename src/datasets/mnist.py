@@ -10,8 +10,8 @@ from torchvision import datasets
 
 class MNIST(datasets.MNIST):
 
-    def __init__(self, root, normal_digit=None, sgm=5, ratio=0.9,
-                 size_data=(32, 32, 1), size_window=(5, 5), **kwargs):
+    def __init__(self, root, normal_digit=None,
+                 size_data=(32, 32, 1), **kwargs):
         super(MNIST, self).__init__(root, **kwargs)
         self.normal_digit = normal_digit
 
@@ -24,9 +24,6 @@ class MNIST(datasets.MNIST):
             self.split_data()
         elif normal_digit is None and self.train == False:
             pass
-
-        self.noise = self.sgm / 255.0 * np.random.randn(
-            len(self.data), self.size_data[0], self.size_data[1], self.size_data[2])
 
     def split_data(self):
         normal_indices = ((self.targets == self.normal_digit).nonzero())
@@ -52,53 +49,12 @@ class MNIST(datasets.MNIST):
 
         original = np.expand_dims(original, axis=2)
         label = original + self.noise[index]
-        input, mask = self.generate_mask(copy.deepcopy(label))
 
         if self.transform:
             original = self.transform((original * 255).astype(np.uint8))
-            input = self.transform((input * 255).astype(np.uint8))
-            label = self.transform((label * 255).astype(np.uint8))
-            mask = self.transform((mask * 255).astype(np.uint8))
             
-        return original, input, label, mask, target
+        return original, target
 
-    def generate_mask(self, input):
-        ratio = self.ratio
-        size_window = self.size_window
-        # size_data = self.size_data
-        size_data = input.shape
-        num_sample = int(size_data[0] * size_data[1] * (1 - ratio))
-
-        mask = np.ones(size_data)
-        output = input
-
-        for ich in range(size_data[2]):
-            # mask is the pixels predicted by N2V
-            idy_mask = np.random.randint(0, size_data[0], num_sample)
-            idx_mask = np.random.randint(0, size_data[1], num_sample)
-
-            # neigh is the pixel that replaces the mask point
-            idy_neigh = np.random.randint(-size_window[0] // 2 + size_window[0] % 2,
-                                          size_window[0] // 2 + size_window[0] % 2,
-                                          num_sample)
-            idx_neigh = np.random.randint(-size_window[1] // 2 + size_window[1] % 2,
-                                          size_window[1] // 2 + size_window[1] % 2,
-                                          num_sample)
-
-            idy_mask_neigh = idy_mask + idy_neigh
-            idy_mask_neigh = idy_mask_neigh + (idy_mask_neigh < 0) * size_data[0] - \
-                             (idy_mask_neigh >= size_data[0]) * size_data[0]
-            idx_mask_neigh = idx_mask + idx_neigh
-            idx_mask_neigh = idx_mask_neigh + (idx_mask_neigh < 0) * size_data[1] - \
-                             (idx_mask_neigh >= size_data[1]) * size_data[1]
-
-            id_msk = (idy_mask, idx_mask, ich)
-            id_msk_neigh = (idy_mask_neigh, idx_mask_neigh, ich)
-
-            output[id_msk] = input[id_msk_neigh]
-            mask[id_msk] = 0.0
-
-        return output, mask
 
 
 def test_dataset():

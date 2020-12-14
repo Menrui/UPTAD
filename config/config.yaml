@@ -23,9 +23,9 @@ log:
 hydra:
   output_subdir: config
   run:
-    dir: output/${dataset.name}/${dataset.category}-${model.name}-${model.loss_type}Loss-${mode.score_type}score-nch${model.nch}-epoch${mode.num_epochs}-h${dataset.patch_h}w${dataset.patch_w}-${model.mask.category}_${model.mask.color}_size${model.mask.size}_ratio${model.mask.mask_ratio}_sigma${model.mask.sigma}-${now:%Y%m%d%H%M}
+    dir: output/${dataset.name}/${dataset.category}-${model.name}-${model.loss_type}Loss-${mode.score_type}score-nch${model.nch}-epoch${mode.num_epochs}-h${dataset.patch_h}w${dataset.patch_w}-${now:%Y%m%d%H%M}
   sweep:
     dir: output/${dataset.name}/
-    subdir: ${dataset.category}-${model.name}-${model.loss_type}Loss-${mode.score_type}score-nch${model.nch}-epoch${mode.num_epochs}-h${dataset.patch_h}w${dataset.patch_w}-${model.mask.category}_${model.mask.color}_size${model.mask.size}_ratio${model.mask.mask_ratio}_sigma${model.mask.sigma}-${now:%Y%m%d%H%M}
+    subdir: ${dataset.category}-${model.name}-${model.loss_type}Loss-${mode.score_type}score-nch${model.nch}-epoch${mode.num_epochs}-h${dataset.patch_h}w${dataset.patch_w}-${now:%Y%m%d%H%M}
 
 

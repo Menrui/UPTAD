@@ -58,55 +58,44 @@ class MaskReconstructionModule(LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        original, input, label, mask, _, _ = batch
+        original, _ = batch
         output = self.model(input.float())
 
         # calculate Loss
-        if self.use_loss_mask:
-            loss_G = self.critation(output * (1 - mask), original * (1 - mask))
-        else:
-            loss_G = self.critation(output, original)
+        loss_G = self.critation(output, original)
 
         self.log('train_loss', loss_G, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         # self.train_history({'train_loss': loss_G.item()})
         return loss_G
 
     def validation_step(self, batch, batch_idx):
-        original, input, label, mask, _, _ = batch
+        original, _ = batch
         # print(input.size())
         output = self.model(input.float())
 
         # calculate Loss
-        if self.use_loss_mask:
-            loss_G = self.critation(output * (1 - mask), original * (1 - mask))
-        else:
-            loss_G = self.critation(output, original)
+        loss_G = self.critation(output, original)
 
         self.log('val_loss', loss_G, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         # self.val_history({'val_loss': loss_G.item()})
         if batch_idx == 0:
             if self.current_epoch == 0:
                 torchvision.utils.save_image(original, os.path.join(self.vis_output_dir, 'original.png'), nrow=3, normalize=True)
-                torchvision.utils.save_image(input, os.path.join(self.vis_output_dir, 'input.png'), nrow=3, normalize=True)
-                torchvision.utils.save_image(mask, os.path.join(self.vis_output_dir, 'loss_mask.png'), nrow=3, normalize=True)
             torchvision.utils.save_image(output, os.path.join(self.vis_output_dir, 'validation_{}.png'.format(self.current_epoch)), nrow=3, normalize=True)
         return loss_G
 
     def test_step(self, batch, batch_idx):
-        original, input, _, mask, gt, target = batch
+        original, target = batch
 
         _size = input.size()
         if input.ndim != 4:
             original = original.reshape(-1, _size[2], _size[3], _size[4])
-            input = input.reshape(-1, _size[2], _size[3], _size[4])
-            mask = mask.reshape(-1, _size[2], _size[3], _size[4])
-            gt = gt.reshape(-1, 1, _size[3], _size[4])  # ground truth mask is grayscale
 
         output = self.model(original)
 
         anomaly_score = self._compute_anomaly_score(original, output)
 
-        self._vis_recon_image(original[0], input[0], output[0], mask[0], anomaly_score, batch_idx)
+        self._vis_recon_image(original[0], output[0], anomaly_score, batch_idx)
         # self.log_dict({'anomaly_score': anomaly_score, 'anomaly_label': target, 'id': batch_idx})
         return anomaly_score, target
 
@@ -202,14 +191,11 @@ class MaskReconstructionModule(LightningModule):
     def _compute_anomaly_score(self, img, output):
         return self.score_func(img, output)
 
-    def _vis_recon_image(self, original, input, output, mask, score, index):
+    def _vis_recon_image(self, original, output, score, index):
         original_img = original.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
-        # input_img = input.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
         output_img = output.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
-        # mask_img = mask.detach().cpu().numpy().transpose(1, 2, 0).squeeze() * 0.5 + 0.5
         dif_img = np.abs(original_img - output_img) if original_img.ndim == 3 else \
             np.expand_dims(np.abs(original_img - output_img), axis=2)
-        # score = score.detach().cpu().numpy()[0]
         score = score.item()
 
         if self.dataset_name == 'yamaha':

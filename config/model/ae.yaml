@@ -12,17 +12,3 @@ alpha: 0.9
 beta_1: 0.5
 beta_2: 0.999
 lr_policy: None
-
-# --- masking configs ---
-mask:
-  add_loss_mask: False
-  add_mask: False
-  add_test_mask: False
-  mask_mode: chole
-  mask_fill:
-  mask_overcoat: True
-  mask_shape: rectangle
-  mask_w: 0
-  mask_h: 0
-  add_gauss: False
-  mask_ratio: 0.95

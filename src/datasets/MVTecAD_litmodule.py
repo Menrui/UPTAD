@@ -7,10 +7,10 @@ import torch
 import torch.utils.data as data
 from torch.utils.data import DataLoader
 import torchvision
+from torchvision.data import transforms
 
 from pytorch_lightning import LightningDataModule
 
-from src.datasets import transforms
 from src.datasets.MVTecAD import MVTecAD
 
 from logging import getLogger
@@ -40,7 +40,6 @@ class MVTecADDataModule(LightningDataModule):
             dataset = MVTecAD(
                 root=self.data_dir, category=self.category, train=True, transform=transform,
                 size_data=(self.data_config.img_h, self.data_config.img_w, self.data_config.img_nch),
-                maskconf=self.mask_config
             )
             n_samples = len(dataset)
             train_size = int(n_samples * (1-0.036))
@@ -57,8 +56,7 @@ class MVTecADDataModule(LightningDataModule):
             ])
             self.test_dataset = MVTecAD(
                 root=self.data_dir, category=self.category, train=False, transform=transform,
-                size_data=(self.data_config.img_h, self.data_config.img_w, self.data_config.img_nch),
-                maskconf=self.mask_config
+                size_data=(self.data_config.img_h, self.data_config.img_w, self.data_config.img_nch)
             )
             logger.info('test image shape: {}'.format(self.test_dataset[0][0].shape))
 
