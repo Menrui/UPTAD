@@ -200,8 +200,8 @@ class NoiseGrinder():
         fill = cv2.GaussianBlur(fill, (25,25), 0)
 
         for i in range(num_sample):
-            short_side = self.mask_size*10 + round(random.normalvariate(mu=self.mu, sigma=self.sigma))*10
-            long_side = int(area/short_side * math.pi)
+            short_side = abs(self.mask_size*7 + round(random.normalvariate(mu=self.mu, sigma=self.sigma))*7)
+            long_side = area/(short_side * math.pi + 1)
             degree = random.randint(0,180)
             long_xy = getXY(r=long_side, degree=degree)
             short_xy = getXY(r=short_side, degree=degree)
