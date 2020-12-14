@@ -26,9 +26,9 @@ if __name__ == '__main__':
     config = compose(config_name='config.yaml')
     config.work_dir = os.getcwd()
 
-    categorys = ['cir', 'line', 'rec']
-    sigmas = [1,3,5]
-    mask_ratios = [0.85, 0.75, 0.65]
+    categorys = ['stain']
+    sigmas = [3]
+    mask_ratios = [0.95]
 
     for category in categorys:
         for sigma in sigmas:

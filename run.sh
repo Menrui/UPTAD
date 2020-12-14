@@ -90,5 +90,7 @@
 # python main.py mode=run model=unet model.mask.category=line model.mask.size=10 model.mask.mu=0 model.mask.sigma=1,3 model.mask.color=c model.loss_type=L2 model.mask.mask_ratio=0.75 model.mask.add_loss_mask=False seed=999,998,997 -m
 # python main.py mode=run model=unet model.mask.category=line model.mask.size=10 model.mask.mu=0 model.mask.sigma=5 model.mask.color=c model.loss_type=L2 model.mask.mask_ratio=0.75 model.mask.add_loss_mask=False seed=999,998,997 -m
 
-python main.py mode=run model=unet model.mask.category=cir,rec model.mask.size=10 model.mask.mu=0 model.mask.sigma=1,3,5 model.mask.color=c model.loss_type=L2 model.mask.mask_ratio=0.65 model.mask.add_loss_mask=False seed=999,998,997 -m
-python main.py mode=run model=unet model.mask.category=line model.mask.size=10 model.mask.mu=0 model.mask.sigma=1,3,5 model.mask.color=c model.loss_type=L2 model.mask.mask_ratio=0.65 model.mask.add_loss_mask=False seed=999,998,997 -m
+# python main.py mode=run model=unet model.mask.category=cir,rec model.mask.size=10 model.mask.mu=0 model.mask.sigma=1,3,5 model.mask.color=c model.loss_type=L2 model.mask.mask_ratio=0.75,0.85 model.mask.add_loss_mask=False seed=999,998,997 -m
+# python main.py mode=run model=unet model.mask.category=line model.mask.size=10 model.mask.mu=0 model.mask.sigma=1,3,5 model.mask.color=c model.loss_type=L2 model.mask.mask_ratio=0.75,0.85 model.mask.add_loss_mask=False seed=999,998,997 -m
+
+python main.py mode=run model=unet model.mask.mode=random model.mask.category=rec-stain model.mask.size=10 model.mask.mu=0 model.mask.sigma=5 model.mask.color=c model.loss_type=L2 model.mask.mask_ratio=0.90 model.mask.add_loss_mask=False seed=999,998,997 -m

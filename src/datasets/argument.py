@@ -62,6 +62,8 @@ class NoiseGrinder():
             input, mask = self._add_circle(input, original, color)
         elif category == "line":
             input, mask = self._add_line(input, original, color)
+        elif category == "stain":
+            input, mask = self._add_l_ellipse(input, original)
         else:
             assert False, "Invalid category {}".format(category)
         
@@ -126,7 +128,7 @@ class NoiseGrinder():
             for idy,idx in zip(idy_mask, idx_mask):
                 # mask[idy:idy+h, idx:idx+w, ch] = 0
                 tmp_mask = np.zeros(size_data, np.float32)
-                _radius = radius + round(random.normalvariate(mu=self.mu, sigma=self.sigma))
+                _radius = radius + round(random.normalvariate(mu=self.mu, sigma=self.sigma)/2)
                 _radius = abs(_radius)
                 cv2.circle(tmp_mask, (idx, idy), _radius, color=self._cv_color_pick(color, original), thickness=-1)
                 mask = (mask + tmp_mask)
@@ -171,6 +173,47 @@ class NoiseGrinder():
 
         mask = 1-np.where(mask>=0.5,1,0)
         input = input*mask
+        return input, mask
+
+    def _add_l_ellipse(self, input, original):
+        def adjust(img, alpha=1.0, beta=0.0):
+            dst = alpha * img + beta/255
+            return np.clip(dst, 0., 1.)
+
+        def getXY(r, degree):
+            # 度をラジアンに変換
+            rad = math.radians(degree)
+            x = r * math.cos(rad)
+            y = r * math.sin(rad)
+            # print(x, y)
+            return round(x), round(y)
+        
+        mask_size = self.mask_size
+        ratio = self.ratio
+        size_data = self.size_data
+        num_sample = random.randint(1,3)
+        area = int((size_data[0] * size_data[1] * (1-ratio))/num_sample)
+
+        mask = np.ones(size_data, np.float32) - 1e-5
+        fill = np.copy(original)
+        fill = adjust(fill, alpha=random.random()*2, beta=random.randint(-10, 10))
+        fill = cv2.GaussianBlur(fill, (25,25), 0)
+
+        for i in range(num_sample):
+            short_side = self.mask_size*10 + round(random.normalvariate(mu=self.mu, sigma=self.sigma))*10
+            long_side = int(area/short_side * math.pi)
+            degree = random.randint(0,180)
+            long_xy = getXY(r=long_side, degree=degree)
+            short_xy = getXY(r=short_side, degree=degree)
+            y = abs(long_xy[1] if long_xy[1]>short_xy[1] else short_xy[1])
+            x = abs(long_xy[0] if long_xy[0]>short_xy[0] else short_xy[0])
+
+            idy = random.randint(y, size_data[0]-y) if y < size_data[0]-y else random.randint(size_data[0]-y, y)
+            idx = random.randint(x, size_data[1]-x) if x < size_data[1]-x else random.randint(size_data[1]-x, x)
+
+            cv2.ellipse(mask, ((idx,idy), (long_side, short_side), degree), (0,0,0), thickness=-1)
+
+        input = input*mask + fill*(1-mask)
         return input, mask
 
     def _cv_color_pick(self, color, original):
